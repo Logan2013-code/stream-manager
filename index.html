@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamManager Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--panel:#161616;--card:#1e1e1e;--hover:#272727;
+  --border:#2a2a2a;--border2:#333;
+  --pgm:#e63946;--prv:#2dc653;--blue:#4361ee;--purple:#7c3aed;--orange:#f59e0b;
+  --twitch:#9146ff;--yt:#ff0000;--tiktok:#ff2d55;
+  --text:#e2e2e2;--dim:#666;--dim2:#444;
+}
+html,body{height:100%;width:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;
+  display:flex;flex-direction:column;user-select:none;
+}
+
+/* ── HEADER ── */
+#hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#0d0d0d;border-bottom:2px solid var(--border2);
+  padding:0 14px;height:48px;flex-shrink:0;gap:12px;
+}
+.logo{font-size:17px;font-weight:800;letter-spacing:1px;color:var(--pgm);white-space:nowrap}
+.logo em{color:var(--text);font-style:normal}
+.hdr-status{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;flex-wrap:wrap}
+.pill{
+  display:flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.8px;
+  background:var(--card);border:1px solid var(--border2);color:var(--dim);
+  white-space:nowrap;
+}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--dim2)}
+.pill.rec-on{color:var(--pgm);border-color:var(--pgm)}
+.pill.rec-on .dot{background:var(--pgm);animation:blink 1s infinite}
+.pill.live-on{color:#38bdf8;border-color:#38bdf8}
+.pill.live-on .dot{background:#38bdf8;animation:blink 1.2s infinite}
+.pill.obs-on{color:var(--prv);border-color:var(--prv)}
+.pill.obs-on .dot{background:var(--prv)}
+.pill.mix-on{color:var(--orange);border-color:var(--orange)}
+.pill.mix-on .dot{background:var(--orange);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#clock{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#btn-fs{
+  background:transparent;border:1px solid var(--border2);color:var(--dim);
+  cursor:pointer;padding:5px 10px;border-radius:5px;font-size:11px;white-space:nowrap;
+}
+#btn-fs:hover{color:var(--text);border-color:#555}
+
+/* ── MAIN ── */
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ── PANELS ── */
+#lpanel{width:215px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#rpanel{width:262px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+#rpanel::-webkit-scrollbar{width:4px}
+#rpanel::-webkit-scrollbar-thumb{background:#222;border-radius:2px}
+#center{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#080808;min-width:0}
+.psec{border-bottom:1px solid var(--border);padding:10px;flex-shrink:0}
+.ptitle{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.pscroll{flex:1;overflow-y:auto;padding:6px}
+.pscroll::-webkit-scrollbar{width:4px}
+.pscroll::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
+
+/* ── BUTTONS ── */
+.btn{
+  border:none;border-radius:6px;cursor:pointer;font-weight:600;
+  font-size:12px;padding:7px 12px;display:inline-flex;align-items:center;
+  justify-content:center;gap:5px;transition:filter .15s,transform .1s;
+}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:scale(.97)}
+.btn-block{width:100%}
+.btn-p{background:var(--blue);color:#fff}
+.btn-d{background:var(--pgm);color:#fff}
+.btn-s{background:var(--prv);color:#000}
+.btn-o{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.btn-o:hover{background:var(--hover)}
+.btn-warn{background:#92400e;color:#fcd34d}
+
+/* ── SOURCE LIST ── */
+.src-item{
+  display:flex;align-items:center;gap:7px;padding:7px 8px;
+  border-radius:6px;cursor:pointer;border:2px solid transparent;
+  margin-bottom:3px;background:var(--card);transition:background .1s,border-color .1s;
+}
+.src-item:hover{background:var(--hover)}
+.src-item.pgm{border-color:var(--pgm)}
+.src-item.prv{border-color:var(--prv)}
+.src-tally{width:9px;height:9px;border-radius:50%;background:var(--dim2);flex-shrink:0}
+.src-item.pgm .src-tally{background:var(--pgm)}
+.src-item.prv .src-tally{background:var(--prv)}
+.src-name{flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src-badge{font-size:9px;padding:2px 4px;border-radius:3px;background:#1a1a1a;color:#555;text-transform:uppercase;flex-shrink:0;border:1px solid var(--border)}
+.src-badge.twitch{background:#1a0f2e;color:var(--twitch);border-color:var(--twitch)}
+.src-badge.youtube{background:#1a0000;color:var(--yt);border-color:var(--yt)}
+.src-badge.embed{background:#1a1400;color:var(--orange);border-color:var(--orange)}
+.btn-rm{background:none;border:none;color:#3a3a3a;cursor:pointer;padding:2px 5px;border-radius:3px;font-size:13px;line-height:1}
+.btn-rm:hover{color:var(--pgm);background:#2a1a1a}
+
+/* ── LAYOUT PICKER ── */
+.lp{display:flex;gap:4px;flex-wrap:wrap}
+.lpbtn{
+  padding:5px 9px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--card);color:var(--dim);cursor:pointer;font-size:11px;font-weight:700;
+  transition:all .15s;
+}
+.lpbtn:hover,.lpbtn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── MULTIVIEW ── */
+#mv{
+  flex:1;display:grid;gap:2px;padding:2px;
+  background:#030303;overflow:hidden;min-height:0;
+}
+.layout-1{grid-template-columns:1fr;grid-template-rows:1fr}
+.layout-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+.layout-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.layout-6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
+.layout-9{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+.layout-1p4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(4,1fr)}
+.layout-1p4 .mvcell:first-child{grid-row:1/5}
+
+.mvcell{
+  position:relative;background:#0d0d0d;cursor:pointer;
+  border:2px solid #1a1a1a;border-radius:3px;overflow:hidden;
+  transition:border-color .1s;
+}
+.mvcell:hover{border-color:#3a3a3a}
+.mvcell.pgm{border-color:var(--pgm);box-shadow:inset 0 0 0 1px var(--pgm)}
+.mvcell.prv{border-color:var(--prv);box-shadow:inset 0 0 0 1px var(--prv)}
+.mvcell video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.mvcell .tbar{position:absolute;top:0;left:0;right:0;height:3px}
+.mvcell.pgm .tbar{background:var(--pgm)}
+.mvcell.prv .tbar{background:var(--prv)}
+.mvcell .vlabel{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:18px 7px 5px;font-size:11px;font-weight:700;letter-spacing:.3px;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  text-shadow:0 1px 3px #000;pointer-events:none;
+}
+.mvcell.pgm .vlabel{color:var(--pgm)}
+.mvcell.prv .vlabel{color:var(--prv)}
+.mvcell .nosig{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:#2a2a2a;gap:6px;pointer-events:none;
+}
+.mvcell .nosig .icon{font-size:28px}
+.mvcell .nosig .txt{font-size:10px;letter-spacing:.5px}
+.mvcell.has-src .nosig{display:none}
+.mvcell .idx-badge{
+  position:absolute;top:5px;right:6px;font-size:9px;font-weight:700;
+  color:#222;background:#111;padding:1px 5px;border-radius:3px;pointer-events:none;
+}
+/* Iframe cells */
+.mvcell iframe{
+  width:100%;height:100%;border:none;display:block;
+  pointer-events:none;/* prevent interaction so click events work */
+  background:#000;
+}
+.mvcell .embed-badge{
+  position:absolute;top:5px;left:6px;font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:3px;pointer-events:none;z-index:2;
+}
+.mvcell .embed-badge.twitch{background:var(--twitch);color:#fff}
+.mvcell .embed-badge.youtube{background:var(--yt);color:#fff}
+.nomix-warn{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.7);color:var(--orange);font-size:10px;font-weight:700;
+  padding:4px 8px;border-radius:4px;letter-spacing:.5px;pointer-events:none;
+  border:1px solid rgba(245,158,11,.3);z-index:3;display:none;
+}
+
+/* ── PGM/PRV ── */
+#pgmprv{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  height:185px;background:#030303;padding:2px;flex-shrink:0;
+  border-top:1px solid #111;
+}
+.mon{position:relative;background:#000;overflow:hidden;border-radius:3px}
+.mon video{width:100%;height:100%;object-fit:contain}
+.mon iframe{width:100%;height:100%;border:none}
+.monlbl{
+  position:absolute;top:5px;left:7px;font-size:10px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;padding:2px 8px;border-radius:3px;z-index:2;
+}
+#pgm-mon .monlbl{background:var(--pgm);color:#fff}
+#prv-mon .monlbl{background:var(--prv);color:#000}
+.monnosig{
+  position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:#1e1e1e;font-size:11px;letter-spacing:1px;
+}
+
+/* ── CUT / AUTO ── */
+.btn-cut{
+  background:var(--pgm);color:#fff;font-size:16px;font-weight:900;
+  letter-spacing:3px;padding:13px;border-radius:7px;border:none;
+  cursor:pointer;width:100%;transition:filter .1s,transform .1s;
+}
+.btn-cut:hover{filter:brightness(1.2)}
+.btn-cut.flash{transform:scale(.95);filter:brightness(1.6)}
+.btn-auto{
+  background:var(--blue);color:#fff;font-size:16px;font-weight:900;
+  letter-spacing:3px;padding:13px;border-radius:7px;border:none;
+  cursor:pointer;width:100%;transition:filter .1s,transform .1s;
+}
+.btn-auto:hover{filter:brightness(1.2)}
+.btn-auto:active{transform:scale(.96)}
+
+/* ── SCENES / TRANSITIONS ── */
+.sclist{display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto}
+.sclist::-webkit-scrollbar{width:4px}
+.sclist::-webkit-scrollbar-thumb{background:#222;border-radius:2px}
+.scitem{
+  padding:7px 11px;border-radius:5px;background:var(--card);
+  cursor:pointer;font-size:12px;border:2px solid transparent;transition:all .1s;
+}
+.scitem:hover{background:var(--hover)}
+.scitem.active{border-color:var(--pgm);color:var(--pgm);font-weight:700}
+.scitem.trans-active{border-color:var(--blue);color:#90a8ff;font-weight:700}
+
+/* ── INPUTS ── */
+.inp{
+  width:100%;background:var(--card);border:1px solid var(--border2);
+  color:var(--text);padding:7px 9px;border-radius:5px;font-size:12px;
+  margin-bottom:5px;font-family:inherit;
+}
+.inp:focus{outline:none;border-color:var(--blue)}
+.inp::placeholder{color:#3a3a3a}
+.inp-sm{font-size:11px;padding:5px 8px}
+.inp-row{display:flex;gap:5px;margin-bottom:5px}
+.inp-row .inp{margin-bottom:0}
+
+/* ── TRANS BUTTONS ── */
+.trbs{display:flex;gap:3px}
+.trb{
+  flex:1;padding:5px 4px;border-radius:4px;border:1px solid var(--border);
+  background:var(--card);color:var(--dim);cursor:pointer;font-size:10px;
+  font-weight:700;text-align:center;transition:all .15s;letter-spacing:.5px;
+}
+.trb:hover,.trb.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── REC/STREAM ── */
+.btn-rec{
+  width:100%;padding:9px;border-radius:6px;border:none;font-size:12px;
+  font-weight:700;cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
+  background:#9b1c1c;color:#fff;transition:filter .15s;
+}
+.btn-rec:hover{filter:brightness(1.2)}
+.btn-rec.on{background:var(--pgm);animation:blink 1.5s infinite}
+.btn-stream{
+  width:100%;padding:9px;border-radius:6px;border:none;font-size:12px;
+  font-weight:700;cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
+  background:#1e3a5f;color:#fff;transition:filter .15s;
+}
+.btn-stream:hover{filter:brightness(1.2)}
+.btn-stream.on{background:var(--purple);animation:blink 1.5s infinite}
+.timer-big{
+  font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;
+  text-align:center;padding:7px;background:var(--card);border-radius:5px;
+  letter-spacing:2px;
+}
+
+/* ── MIXER SECTION ── */
+.mix-preview{
+  width:100%;aspect-ratio:16/9;background:#000;border-radius:5px;
+  border:1px solid var(--border2);overflow:hidden;position:relative;margin-bottom:8px;
+}
+.mix-preview canvas{width:100%;height:100%;display:block}
+.mix-quality-btns{display:flex;gap:4px;margin-bottom:8px}
+.mqbtn{
+  flex:1;padding:5px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--card);color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;
+  transition:all .15s;text-align:center;
+}
+.mqbtn:hover,.mqbtn.active{background:var(--orange);border-color:var(--orange);color:#000}
+.mix-mode-btns{display:flex;gap:4px;margin-bottom:8px}
+.mmbtn{
+  flex:1;padding:5px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--card);color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;
+  transition:all .15s;text-align:center;
+}
+.mmbtn:hover,.mmbtn.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn-mixrec{
+  width:100%;padding:9px;border-radius:6px;border:none;font-size:12px;
+  font-weight:700;cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
+  background:#1c2a1c;color:var(--prv);border:1px solid var(--prv);transition:all .15s;
+}
+.btn-mixrec:hover{background:#1f3d1f}
+.btn-mixrec.on{background:var(--prv);color:#000;animation:blink 1.5s infinite}
+
+/* ── WARN BANNER ── */
+.warn-banner{
+  background:#1c1400;border:1px solid #92400e;border-radius:5px;
+  padding:8px 10px;font-size:10px;color:#fcd34d;line-height:1.5;margin-bottom:6px;
+}
+.warn-banner strong{display:block;margin-bottom:2px;font-size:11px}
+
+/* ── CONN STATUS ── */
+.cst{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:8px;color:var(--dim)}
+.cdot{width:7px;height:7px;border-radius:50%;background:var(--dim2);flex-shrink:0}
+.cst.on{color:var(--prv)}.cst.on .cdot{background:var(--prv)}
+.cst.err{color:var(--pgm)}.cst.err .cdot{background:var(--pgm)}
+
+/* ── SLIDER ── */
+.slider-row{display:flex;align-items:center;gap:7px;margin-top:6px}
+input[type=range]{flex:1;accent-color:var(--blue);cursor:pointer}
+.sdur{font-size:11px;color:var(--dim);min-width:38px}
+
+/* ── VOL ── */
+.volrow{display:flex;align-items:center;gap:5px;margin-top:3px}
+.vollbl{font-size:10px;color:var(--dim);width:22px;flex-shrink:0}
+input.vol{flex:1;accent-color:var(--prv)}
+
+/* ── MODAL ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;backdrop-filter:blur(6px);
+}
+.overlay.hidden{display:none}
+.modal{
+  background:var(--panel);border:1px solid var(--border2);
+  border-radius:12px;padding:22px;width:480px;max-width:96vw;
+  max-height:90vh;overflow-y:auto;
+}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:16px}
+.modal-row{margin-bottom:10px}
+.modal-row label{display:block;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.mac{display:flex;gap:7px;justify-content:flex-end;margin-top:16px}
+.typepicker{display:flex;gap:4px;flex-wrap:wrap}
+.typebtn{
+  padding:6px 11px;border-radius:5px;border:1px solid var(--border2);
+  background:var(--card);color:var(--dim);cursor:pointer;font-size:11px;
+  font-weight:700;transition:all .15s;
+}
+.typebtn:hover,.typebtn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.typebtn.twitch-btn.active{background:var(--twitch);border-color:var(--twitch)}
+.typebtn.youtube-btn.active{background:var(--yt);border-color:var(--yt)}
+.hint-box{
+  background:var(--card);border:1px solid var(--border);border-radius:6px;
+  padding:10px;font-size:11px;color:var(--dim);line-height:1.6;margin-top:6px;
+}
+.hint-box strong{color:var(--text)}
+.hint-box code{
+  background:#111;border:1px solid var(--border);border-radius:3px;
+  padding:1px 5px;font-family:monospace;color:#90a8ff;font-size:10px;
+}
+
+/* ── CONTEXT MENU ── */
+.ctxmenu{
+  position:fixed;background:#1c1c1c;border:1px solid var(--border2);
+  border-radius:8px;padding:5px;z-index:800;min-width:175px;
+  box-shadow:0 12px 32px rgba(0,0,0,.7);
+}
+.ctxitem{
+  padding:8px 12px;cursor:pointer;border-radius:5px;font-size:12px;
+  display:flex;align-items:center;gap:8px;color:var(--text);
+}
+.ctxitem:hover{background:var(--hover)}
+.ctxitem.danger:hover{background:#2a1010;color:var(--pgm)}
+.ctxsep{border-top:1px solid var(--border);margin:4px 0}
+.ctxtitle{font-size:9px;color:var(--dim);padding:4px 12px;letter-spacing:1px;text-transform:uppercase}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:38px;right:16px;background:#1e1e1e;
+  padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;
+  display:none;border-left:4px solid var(--prv);
+  box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:300px;line-height:1.4;
+}
+
+/* ── HELP BAR ── */
+#helpbar{
+  background:#0d0d0d;border-top:1px solid var(--border);
+  padding:4px 14px;font-size:10px;color:var(--dim2);
+  display:flex;gap:14px;flex-shrink:0;flex-wrap:wrap;
+}
+kbd{
+  background:#1a1a1a;border:1px solid #2a2a2a;border-radius:3px;
+  padding:0 4px;font-size:9px;font-family:monospace;color:#666;
+}
+/* TV */
+@media(min-width:2000px){
+  body{font-size:15px}
+  #lpanel{width:260px}#rpanel{width:310px}
+  #pgmprv{height:230px}#hdr{height:56px}
+  .logo{font-size:20px}#clock{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div id="hdr">
+  <div class="logo">STREAM<em>MANAGER</em> <span style="font-size:10px;font-weight:400;color:#333">PRO</span></div>
+  <div class="hdr-status">
+    <div class="pill" id="pill-rec"><div class="dot"></div>REC <span id="hdr-rec-t"></span></div>
+    <div class="pill" id="pill-live"><div class="dot"></div>LIVE</div>
+    <div class="pill" id="pill-obs"><div class="dot"></div>OBS</div>
+    <div class="pill" id="pill-mix"><div class="dot"></div>MIXER</div>
+  </div>
+  <div id="clock">00:00:00</div>
+  <button id="btn-fs" onclick="toggleFS()">⛶ Volledig scherm</button>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="lpanel">
+    <div class="psec">
+      <div class="ptitle">Bronnen</div>
+      <button class="btn btn-p btn-block" onclick="openAddSrc()">＋ Bron toevoegen</button>
+      <button class="btn btn-o btn-block" style="margin-top:5px;font-size:11px" onclick="addDemoSources()">🎨 Demo bronnen</button>
+    </div>
+    <div class="pscroll" id="srclist"></div>
+    <div class="psec">
+      <div class="ptitle">Multiview layout</div>
+      <div class="lp" id="lpicker">
+        <button class="lpbtn" data-l="1" onclick="setLayout(1)">Solo</button>
+        <button class="lpbtn active" data-l="4" onclick="setLayout(4)">2×2</button>
+        <button class="lpbtn" data-l="6" onclick="setLayout(6)">2×3</button>
+        <button class="lpbtn" data-l="9" onclick="setLayout(9)">3×3</button>
+        <button class="lpbtn" data-l="2" onclick="setLayout(2)">Side</button>
+        <button class="lpbtn" data-l="1p4" onclick="setLayout('1p4')">1+4</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <div id="mv" class="layout-4"></div>
+    <div id="pgmprv">
+      <div class="mon" id="pgm-mon">
+        <video id="pgm-vid" muted autoplay playsinline></video>
+        <div class="monlbl">PROGRAM</div>
+        <div class="monnosig" id="pgm-nosig">NO SIGNAL</div>
+      </div>
+      <div class="mon" id="prv-mon">
+        <video id="prv-vid" muted autoplay playsinline></video>
+        <div class="monlbl">PREVIEW</div>
+        <div class="monnosig" id="prv-nosig">NO SIGNAL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rpanel">
+
+    <!-- OBS -->
+    <div class="psec">
+      <div class="ptitle">OBS WebSocket</div>
+      <div class="cst" id="cst-obs"><div class="cdot"></div><span id="cst-txt">Niet verbonden</span></div>
+      <input class="inp inp-sm" id="obs-host" value="localhost" placeholder="Host">
+      <div class="inp-row">
+        <input class="inp inp-sm" type="number" id="obs-port" value="4455" placeholder="Port">
+        <input class="inp inp-sm" type="password" id="obs-pw" placeholder="Wachtwoord">
+      </div>
+      <button class="btn btn-p btn-block" id="obs-btn" onclick="obsToggle()">Verbinden met OBS</button>
+    </div>
+
+    <!-- OBS Scenes -->
+    <div class="psec">
+      <div class="ptitle">OBS Scènes</div>
+      <div class="sclist" id="sclist"><div style="color:var(--dim2);font-size:11px">Verbind met OBS</div></div>
+    </div>
+
+    <!-- Transition -->
+    <div class="psec">
+      <div class="ptitle">Overgang</div>
+      <div class="trbs">
+        <button class="trb active" data-t="Cut" onclick="selTrans(this)">CUT</button>
+        <button class="trb" data-t="Fade" onclick="selTrans(this)">FADE</button>
+        <button class="trb" data-t="Slide" onclick="selTrans(this)">SLIDE</button>
+        <button class="trb" data-t="Wipe" onclick="selTrans(this)">WIPE</button>
+      </div>
+      <div class="slider-row">
+        <span style="font-size:10px;color:var(--dim)">Duur</span>
+        <input type="range" min="100" max="3000" step="100" value="500" id="tdur" oninput="tdurChange(this.value)">
+        <span class="sdur" id="tdur-lbl">500ms</span>
+      </div>
+    </div>
+
+    <!-- CUT / AUTO -->
+    <div class="psec">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        <button class="btn-cut" id="btn-cut" onclick="doCut()">CUT</button>
+        <button class="btn-auto" onclick="doAuto()">AUTO</button>
+      </div>
+    </div>
+
+    <!-- OBS Transitions -->
+    <div class="psec" id="obs-trans-sec" style="display:none">
+      <div class="ptitle">OBS Overgangen</div>
+      <div class="sclist" id="obs-trans-list"></div>
+    </div>
+
+    <!-- Record / Stream -->
+    <div class="psec">
+      <div class="ptitle">OBS Opname &amp; Uitzending</div>
+      <button class="btn-rec" id="btn-rec" onclick="toggleRec()">⏺ OPNAME STARTEN</button>
+      <button class="btn-stream" id="btn-str" onclick="toggleStr()">📡 STREAM STARTEN</button>
+      <div class="timer-big" id="rec-timer">00:00:00</div>
+    </div>
+
+    <!-- ═══ CANVAS MIXER ═══ -->
+    <div class="psec">
+      <div class="ptitle" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Browser Mixer</span>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--text)">
+          <input type="checkbox" id="mix-toggle" onchange="toggleMixer(this.checked)" style="accent-color:var(--orange)">
+          Inschakelen
+        </label>
+      </div>
+
+      <div id="mix-body" style="display:none">
+        <div class="warn-banner">
+          <strong>⚠ Twitch/YouTube embeds kunnen NIET gemengd worden</strong>
+          Iframes (Twitch, YouTube) zijn zichtbaar maar browser-beveiliging blokkeert mixen.
+          Alleen webcam, scherm, HLS en testbronnen worden gemengd.
+        </div>
+
+        <div class="mix-preview">
+          <canvas id="mix-canvas"></canvas>
+        </div>
+
+        <div style="font-size:10px;color:var(--dim);margin-bottom:6px">Mixer modus:</div>
+        <div class="mix-mode-btns">
+          <button class="mmbtn active" data-m="pgm" onclick="setMixMode(this)">Programma</button>
+          <button class="mmbtn" data-m="multi" onclick="setMixMode(this)">Multiview</button>
+          <button class="mmbtn" data-m="pgm+prv" onclick="setMixMode(this)">PGM+PRV</button>
+        </div>
+
+        <div style="font-size:10px;color:var(--dim);margin-bottom:6px">Kwaliteit:</div>
+        <div class="mix-quality-btns">
+          <button class="mqbtn" data-q="720" onclick="setMixQ(this)">720p</button>
+          <button class="mqbtn active" data-q="1080" onclick="setMixQ(this)">1080p</button>
+          <button class="mqbtn" data-q="2160" onclick="setMixQ(this)">4K</button>
+        </div>
+
+        <button class="btn-mixrec" id="btn-mixrec" onclick="toggleMixRec()">⏺ Browser opname starten</button>
+        <div style="font-size:10px;color:var(--dim);text-align:center" id="mix-rec-info">Opname slaat op als .webm bestand</div>
+      </div>
+    </div>
+
+    <!-- RTMP info voor vrienden -->
+    <div class="psec">
+      <div class="ptitle">Vrienden toevoegen</div>
+      <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:8px">
+        Vrienden kunnen via <strong style="color:var(--text)">OBS → Instellingen → Stream</strong> direct naar jou streamen:
+      </div>
+      <div class="hint-box">
+        <strong>Via RTMP relay (aanbevolen):</strong><br>
+        Vriend stuurt naar <code>rtmp://jouw-ip/live</code><br>
+        Jij laadt <code>http://jouw-ip:8080/hls/stream.m3u8</code><br><br>
+        <strong>Of via Restream.io:</strong><br>
+        Vriend streamt naar Restream → jij laadt hun HLS afspeellink als bron.
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <div class="psec">
+      <div class="ptitle">Bronvolume</div>
+      <div id="vol-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- HELP BAR -->
+<div id="helpbar">
+  <span><kbd>Space</kbd> CUT</span>
+  <span><kbd>Enter</kbd> AUTO</span>
+  <span><kbd>1–9</kbd> Preview bron</span>
+  <span><kbd>F</kbd> Volledig scherm</span>
+  <span><kbd>R</kbd> OBS opname</span>
+  <span><kbd>M</kbd> Mixer opname</span>
+  <span>Rechts-klik cel: bron toewijzen</span>
+</div>
+
+<!-- ═══ MODAL: ADD SOURCE ═══ -->
+<div class="overlay hidden" id="add-modal" onclick="if(event.target===this)closeModal('add-modal')">
+  <div class="modal">
+    <h2>Bron toevoegen</h2>
+
+    <div class="modal-row">
+      <label>Type</label>
+      <div class="typepicker" id="type-picker">
+        <button class="typebtn active" data-st="url" onclick="pickType(this)">🎬 Video URL</button>
+        <button class="typebtn" data-st="hls" onclick="pickType(this)">📡 HLS Stream</button>
+        <button class="typebtn twitch-btn" data-st="twitch" onclick="pickType(this)">🟣 Twitch</button>
+        <button class="typebtn youtube-btn" data-st="youtube" onclick="pickType(this)">▶️ YouTube</button>
+        <button class="typebtn" data-st="webcam" onclick="pickType(this)">📷 Webcam</button>
+        <button class="typebtn" data-st="screen" onclick="pickType(this)">🖥 Scherm</button>
+      </div>
+    </div>
+
+    <div class="modal-row">
+      <label>Naam</label>
+      <input class="inp" id="src-name" placeholder="bijv. Camera 1 of Vriend naam">
+    </div>
+
+    <!-- URL row -->
+    <div id="url-row" class="modal-row">
+      <label id="url-lbl">URL</label>
+      <input class="inp" id="src-url" placeholder="">
+      <div class="hint-box" id="url-hint"></div>
+    </div>
+
+    <!-- Twitch row -->
+    <div id="twitch-row" class="modal-row" style="display:none">
+      <label>Twitch kanaal naam</label>
+      <input class="inp" id="twitch-ch" placeholder="bijv. shroud  of  twitch.tv/shroud">
+      <div class="hint-box">
+        <strong>Visueel embed — kan niet gemengd worden</strong><br>
+        De Twitch speler wordt zichtbaar in de multiview cel.
+        Voor écht mixen: vriend stuurt RTMP → jij laadt als HLS bron.
+      </div>
+    </div>
+
+    <!-- YouTube row -->
+    <div id="yt-row" class="modal-row" style="display:none">
+      <label>YouTube URL of video ID</label>
+      <input class="inp" id="yt-url" placeholder="bijv. https://youtube.com/watch?v=... of live stream URL">
+      <div class="hint-box">
+        <strong>Visueel embed — kan niet gemengd worden</strong><br>
+        De YouTube speler wordt zichtbaar in de cel.
+        Werkt voor live streams én VOD video's.
+      </div>
+    </div>
+
+    <!-- Webcam row -->
+    <div id="cam-row" class="modal-row" style="display:none">
+      <label>Camera apparaat</label>
+      <select class="inp" id="cam-sel"></select>
+    </div>
+
+    <div class="mac">
+      <button class="btn btn-o" onclick="closeModal('add-modal')">Annuleren</button>
+      <button class="btn btn-p" onclick="confirmAdd()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// OBS WebSocket Controller (v5)
+// ══════════════════════════════════════════════════
+class OBSWs {
+  constructor(){this.ws=null;this.ok=false;this.rid=1;this.q=new Map();this.onEvt=null;this.onUp=null;this.onDown=null}
+  async connect(host,port,pw){
+    return new Promise((res,rej)=>{
+      this.ws=new WebSocket(`ws://${host}:${port}`);
+      const to=setTimeout(()=>{this.ws.close();rej(new Error('Timeout'))},9000);
+      this.ws.onmessage=async e=>{
+        try{
+          const{op,d}=JSON.parse(e.data);
+          if(op===0){clearTimeout(to);let auth=null;if(d.authentication&&pw)auth=await this._auth(pw,d.authentication.challenge,d.authentication.salt);this._tx(1,{rpcVersion:1,...(auth&&{authentication:auth}),eventSubscriptions:65535})}
+          else if(op===2){this.ok=true;res();this.onUp?.()}
+          else if(op===5){this.onEvt?.(d.eventType,d.eventData||{})}
+          else if(op===7){const cb=this.q.get(d.requestId);if(cb){this.q.delete(d.requestId);d.requestStatus.result?cb.res(d.responseData||{}):cb.rej(new Error(d.requestStatus.comment))}}
+        }catch(err){console.error(err)}
+      };
+      this.ws.onerror=()=>{clearTimeout(to);rej(new Error('Verbinding mislukt'))};
+      this.ws.onclose=()=>{this.ok=false;this.onDown?.()};
+    });
+  }
+  _tx(op,d){if(this.ws?.readyState===1)this.ws.send(JSON.stringify({op,d}))}
+  req(type,data={}){return new Promise((res,rej)=>{const id=String(this.rid++);this.q.set(id,{res,rej});this._tx(6,{requestType:type,requestId:id,requestData:data});setTimeout(()=>{if(this.q.has(id)){this.q.delete(id);rej(new Error('Timeout'))}},6000)})}
+  async _auth(pw,ch,salt){const enc=new TextEncoder(),dig=d=>crypto.subtle.digest('SHA-256',enc.encode(d)),b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));return b64(await dig(b64(await dig(pw+salt))+ch))}
+  disconnect(){this.ws?.close();this.ok=false}
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS MIXER
+// ══════════════════════════════════════════════════
+const mixer={
+  canvas:null,ctx:null,stream:null,running:false,
+  recorder:null,recChunks:[],recActive:false,
+  mode:'pgm',quality:1080,rafId:null,
+  init(){
+    this.canvas=document.getElementById('mix-canvas');
+    this.setQuality(1080);
+    this.ctx=this.canvas.getContext('2d');
+  },
+  setQuality(q){
+    this.quality=q;
+    const w=q===720?1280:q===2160?3840:1920;
+    const h=q===720?720:q===2160?2160:1080;
+    if(this.canvas){this.canvas.width=w;this.canvas.height=h}
+  },
+  start(){
+    if(this.running)return;
+    this.running=true;
+    this.stream=this.canvas.captureStream(30);
+    this.draw();
+    setPill('pill-mix',true);
+  },
+  stop(){
+    this.running=false;
+    if(this.rafId)cancelAnimationFrame(this.rafId);
+    if(this.recActive)this.stopRec();
+    this.stream=null;
+    setPill('pill-mix',false);
+  },
+  draw(){
+    if(!this.running)return;
+    const ctx=this.ctx,w=this.canvas.width,h=this.canvas.height;
+    ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
+
+    if(this.mode==='pgm'){
+      this._drawSrc(S.pgm,0,0,w,h,ctx);
+    }else if(this.mode==='pgm+prv'){
+      this._drawSrc(S.pgm,0,0,w/2,h,ctx);
+      this._drawSrc(S.prv,w/2,0,w/2,h,ctx);
+    }else{
+      // multiview grid
+      const srcs=S.cells.filter(c=>c.srcId&&!c.isEmbed).slice(0,4);
+      const cols=2,cw=w/cols,ch=h/Math.ceil(srcs.length/cols||1);
+      srcs.forEach((c,i)=>this._drawSrc(c.srcId,(i%cols)*cw,Math.floor(i/cols)*ch,cw,ch,ctx));
+    }
+
+    // PGM label overlay
+    ctx.fillStyle='rgba(230,57,70,.85)';ctx.fillRect(16,16,130,34);
+    ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(h/54)}px "Segoe UI",sans-serif`;
+    ctx.textAlign='left';ctx.fillText('● PROGRAM',22,38);
+
+    // Clock
+    const ts=new Date().toLocaleTimeString('nl-NL');
+    const fs=Math.floor(h/54);
+    ctx.font=`bold ${fs}px monospace`;
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.textAlign='right';
+    ctx.fillText(ts,w-16,h-16);
+    ctx.textAlign='left';
+
+    this.rafId=requestAnimationFrame(()=>this.draw());
+  },
+  _drawSrc(srcId,x,y,w,h,ctx){
+    if(!srcId)return;
+    const cell=S.cells.find(c=>c.srcId===srcId);
+    if(!cell||cell.isEmbed)return;
+    try{ctx.drawImage(cell.vid,x,y,w,h)}catch(e){}
+  },
+  startRec(){
+    if(!this.stream||this.recActive)return;
+    this.recChunks=[];
+    const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm';
+    this.recorder=new MediaRecorder(this.stream,{mimeType:mime,videoBitsPerSecond:8000000});
+    this.recorder.ondataavailable=e=>{if(e.data.size>0)this.recChunks.push(e.data)};
+    this.recorder.onstop=()=>this._download();
+    this.recorder.start(500);
+    this.recActive=true;
+    const btn=document.getElementById('btn-mixrec');
+    btn.textContent='⏹ Opname stoppen';btn.classList.add('on');
+    setPill('pill-mix',true);
+    document.getElementById('mix-rec-info').textContent='🔴 Opname bezig...';
+  },
+  stopRec(){
+    this.recorder?.stop();this.recActive=false;
+    const btn=document.getElementById('btn-mixrec');
+    btn.textContent='⏺ Browser opname starten';btn.classList.remove('on');
+    document.getElementById('mix-rec-info').textContent='Opgeslagen als .webm bestand';
+  },
+  _download(){
+    const blob=new Blob(this.recChunks,{type:'video/webm'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;
+    a.download=`stream-mix-${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.webm`;
+    a.click();URL.revokeObjectURL(url);
+    toast('Opname gedownload!');
+  }
+};
+
+// ══════════════════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════════════════
+const obs=new OBSWs();
+const S={
+  sources:[],cells:[],pgm:null,prv:null,layout:4,selType:'url',
+  tdur:500,rec:false,str:false,recT:null,
+  obsScenes:[],obsScene:null,obsTrans:[],obsTransCur:null,
+  volumes:{},nid:1,
+};
+
+// ══════════════════════════════════════════════════
+// VIDEO ATTACHMENT
+// ══════════════════════════════════════════════════
+function attachVid(vEl,srcId){
+  if(!vEl)return;
+  if(vEl._hls){vEl._hls.destroy();vEl._hls=null}
+  vEl.src='';vEl.srcObject=null;
+  const s=S.sources.find(x=>x.id===srcId);
+  if(!s)return;
+  if(s.type==='twitch'||s.type==='youtube')return; // iframe only
+  if(s.stream){vEl.srcObject=s.stream;vEl.muted=true;vEl.play().catch(()=>{})}
+  else if(s.type==='hls'){
+    if(typeof Hls!=='undefined'&&Hls.isSupported()){
+      const h=new Hls({enableWorker:true,lowLatencyMode:true});
+      h.loadSource(s.url);h.attachMedia(vEl);vEl._hls=h;vEl.muted=true;
+      h.on(Hls.Events.MANIFEST_PARSED,()=>vEl.play().catch(()=>{}));
+    }else{vEl.src=s.url;vEl.play().catch(()=>{})}
+  }else if(s.url){vEl.src=s.url;vEl.muted=true;vEl.play().catch(()=>{})}
+}
+
+// Build iframe src for embed sources
+function iframeSrc(src){
+  if(src.type==='twitch'){
+    const host=location.hostname||'localhost';
+    return `https://player.twitch.tv/?channel=${encodeURIComponent(src.channel)}&parent=${host}&autoplay=true&muted=false`;
+  }
+  if(src.type==='youtube'){
+    return `https://www.youtube.com/embed/${src.ytId}?autoplay=1&mute=0&rel=0&controls=1`;
+  }
+  return '';
+}
+
+// ══════════════════════════════════════════════════
+// LAYOUT / MULTIVIEW
+// ══════════════════════════════════════════════════
+const LAYOUTS={1:'layout-1',2:'layout-2',4:'layout-4',6:'layout-6',9:'layout-9','1p4':'layout-1p4'};
+const COUNTS={1:1,2:2,4:4,6:6,9:9,'1p4':5};
+
+function setLayout(l){
+  S.layout=l;
+  document.querySelectorAll('.lpbtn').forEach(b=>b.classList.toggle('active',String(b.dataset.l)===String(l)));
+  const mv=document.getElementById('mv');
+  S.cells.forEach(c=>{if(c.vid?._hls)c.vid._hls.destroy()});
+  S.cells=[];mv.innerHTML='';
+  mv.className=LAYOUTS[l]||'layout-4';
+  const n=COUNTS[l]||4;
+  for(let i=0;i<n;i++){
+    const src=S.sources[i]||null;
+    const cell=makeCell(i,src?.id||null);
+    S.cells.push(cell);mv.appendChild(cell.el);
+  }
+  updTallies();
+}
+
+function makeCell(idx,srcId){
+  const el=document.createElement('div');
+  el.className='mvcell'+(srcId?' has-src':'');
+
+  const vid=document.createElement('video');
+  vid.muted=true;vid.autoplay=true;vid.playsInline=true;
+  el.appendChild(vid);
+
+  const iframe=document.createElement('iframe');
+  iframe.allow='autoplay;fullscreen';iframe.allowFullscreen=true;
+  iframe.style.display='none';
+  el.appendChild(iframe);
+
+  const tbar=document.createElement('div');tbar.className='tbar';el.appendChild(tbar);
+  const lbl=document.createElement('div');lbl.className='vlabel';el.appendChild(lbl);
+  const badge=document.createElement('div');badge.className='idx-badge';badge.textContent=idx+1;el.appendChild(badge);
+  const ns=document.createElement('div');ns.className='nosig';
+  ns.innerHTML=`<div class="icon">📺</div><div class="txt">CEL ${idx+1}</div>`;
+  el.appendChild(ns);
+  const nomix=document.createElement('div');nomix.className='nomix-warn';nomix.textContent='⚠ Embed — niet mixbaar';el.appendChild(nomix);
+
+  const cell={el,vid,iframe,srcId,isEmbed:false};
+
+  el.addEventListener('click',e=>{
+    if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList()}
+  });
+  el.addEventListener('dblclick',e=>{
+    if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList()}
+  });
+  el.addEventListener('contextmenu',e=>{e.preventDefault();showCtx(cell,e.clientX,e.clientY)});
+
+  if(srcId)setCell(cell,srcId);
+  return cell;
+}
+
+function setCell(cell,srcId){
+  cell.srcId=srcId;
+  const nomix=cell.el.querySelector('.nomix-warn');
+  if(srcId){
+    const s=S.sources.find(x=>x.id===srcId);
+    cell.el.classList.add('has-src');
+    cell.el.querySelector('.vlabel').textContent=s?.name||'';
+    const isEmbed=s?.type==='twitch'||s?.type==='youtube';
+    cell.isEmbed=isEmbed;
+    if(isEmbed){
+      cell.vid.style.display='none';
+      cell.iframe.style.display='block';
+      cell.iframe.src=iframeSrc(s);
+      nomix.style.display='block';
+      // embed badge
+      let eb=cell.el.querySelector('.embed-badge');
+      if(!eb){eb=document.createElement('div');eb.className='embed-badge';cell.el.appendChild(eb)}
+      eb.className=`embed-badge ${s.type}`;
+      eb.textContent=s.type==='twitch'?'TWITCH':'YOUTUBE';
+    }else{
+      cell.vid.style.display='block';
+      cell.iframe.style.display='none';
+      cell.iframe.src='about:blank';
+      nomix.style.display='none';
+      const eb=cell.el.querySelector('.embed-badge');if(eb)eb.remove();
+      attachVid(cell.vid,srcId);
+    }
+  }else{
+    cell.el.classList.remove('has-src');
+    cell.el.querySelector('.vlabel').textContent='';
+    cell.isEmbed=false;
+    cell.vid.style.display='block';
+    cell.iframe.style.display='none';
+    cell.iframe.src='about:blank';
+    nomix.style.display='none';
+    const eb=cell.el.querySelector('.embed-badge');if(eb)eb.remove();
+    if(cell.vid._hls){cell.vid._hls.destroy();cell.vid._hls=null}
+    cell.vid.src='';cell.vid.srcObject=null;
+  }
+  updTallies();
+}
+
+function showCtx(cell,x,y){
+  document.querySelectorAll('.ctxmenu').forEach(m=>m.remove());
+  const m=document.createElement('div');m.className='ctxmenu';
+  const title=document.createElement('div');title.className='ctxtitle';title.textContent=`Cel ${cell.el.querySelector('.idx-badge')?.textContent||''} — bron kiezen`;m.appendChild(title);
+  if(!S.sources.length){
+    const no=document.createElement('div');no.className='ctxitem';no.style.color='var(--dim)';no.textContent='Geen bronnen';m.appendChild(no);
+  }else{
+    S.sources.forEach(s=>{
+      const it=document.createElement('div');it.className='ctxitem';
+      const icons={hls:'📡',url:'🎬',webcam:'📷',screen:'🖥',twitch:'🟣',youtube:'▶️',test:'🎨'};
+      const dot=`<div style="width:8px;height:8px;border-radius:50%;background:${cell.srcId===s.id?'var(--prv)':'var(--dim2)'}"></div>`;
+      it.innerHTML=`${dot}${icons[s.type]||'📺'} ${s.name}`;
+      it.onclick=()=>{setCell(cell,s.id);m.remove()};m.appendChild(it);
+    });
+  }
+  if(cell.srcId){
+    const sep=document.createElement('div');sep.className='ctxsep';m.appendChild(sep);
+    const clr=document.createElement('div');clr.className='ctxitem danger';clr.innerHTML='✕ Cel leegmaken';
+    clr.onclick=()=>{setCell(cell,null);m.remove()};m.appendChild(clr);
+  }
+  const sep2=document.createElement('div');sep2.className='ctxsep';m.appendChild(sep2);
+  ['🔴 Naar PROGRAM','🟢 Naar PREVIEW'].forEach((txt,i)=>{
+    const it=document.createElement('div');it.className='ctxitem';it.innerHTML=txt;
+    it.onclick=()=>{if(cell.srcId){i===0?(S.pgm=cell.srcId):(S.prv=cell.srcId);updMonitors();updTallies();updSrcList()}m.remove()};
+    m.appendChild(it);
+  });
+  m.style.left=Math.min(x,window.innerWidth-185)+'px';
+  m.style.top=Math.min(y,window.innerHeight-260)+'px';
+  document.body.appendChild(m);
+  setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),10);
+}
+
+function updTallies(){
+  S.cells.forEach(c=>{
+    c.el.classList.remove('pgm','prv');
+    if(c.srcId===S.pgm)c.el.classList.add('pgm');
+    else if(c.srcId===S.prv)c.el.classList.add('prv');
+  });
+}
+
+function updMonitors(){
+  const pgmSrc=S.sources.find(s=>s.id===S.pgm);
+  const prvSrc=S.sources.find(s=>s.id===S.prv);
+  const pgmMon=document.getElementById('pgm-mon');
+  const prvMon=document.getElementById('prv-mon');
+
+  // PGM monitor
+  let pgmIframe=pgmMon.querySelector('iframe');
+  if(!pgmIframe){pgmIframe=document.createElement('iframe');pgmIframe.allow='autoplay;fullscreen';pgmIframe.style.cssText='width:100%;height:100%;border:none;display:none';pgmMon.appendChild(pgmIframe)}
+  const pgmVid=document.getElementById('pgm-vid');
+  if(pgmSrc&&(pgmSrc.type==='twitch'||pgmSrc.type==='youtube')){
+    pgmVid.style.display='none';pgmIframe.style.display='block';pgmIframe.src=iframeSrc(pgmSrc);
+  }else{
+    pgmIframe.style.display='none';pgmIframe.src='about:blank';pgmVid.style.display='block';attachVid(pgmVid,S.pgm);
+  }
+
+  // PRV monitor
+  let prvIframe=prvMon.querySelector('iframe');
+  if(!prvIframe){prvIframe=document.createElement('iframe');prvIframe.allow='autoplay;fullscreen';prvIframe.style.cssText='width:100%;height:100%;border:none;display:none';prvMon.appendChild(prvIframe)}
+  const prvVid=document.getElementById('prv-vid');
+  if(prvSrc&&(prvSrc.type==='twitch'||prvSrc.type==='youtube')){
+    prvVid.style.display='none';prvIframe.style.display='block';prvIframe.src=iframeSrc(prvSrc);
+  }else{
+    prvIframe.style.display='none';prvIframe.src='about:blank';prvVid.style.display='block';attachVid(prvVid,S.prv);
+  }
+
+  document.getElementById('pgm-nosig').style.display=S.pgm?'none':'flex';
+  document.getElementById('prv-nosig').style.display=S.prv?'none':'flex';
+}
+
+// ══════════════════════════════════════════════════
+// SOURCE MANAGEMENT
+// ══════════════════════════════════════════════════
+function addSrc(name,type,opts){
+  const id=String(S.nid++);
+  S.volumes[id]=1;
+  const src={id,name,type,...opts};
+  S.sources.push(src);
+  const ec=S.cells.find(c=>!c.srcId);
+  if(ec)setCell(ec,id);
+  if(!S.pgm){S.pgm=id;updMonitors()}
+  else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}
+  updSrcList();updTallies();updVolList();
+  toast(`"${name}" toegevoegd`);
+  return id;
+}
+
+function removeSrc(id){
+  S.cells.forEach(c=>{if(c.srcId===id)setCell(c,null)});
+  const s=S.sources.find(x=>x.id===id);
+  if(s?.stream)s.stream.getTracks().forEach(t=>t.stop());
+  if(S.pgm===id){S.pgm=null;updMonitors()}
+  if(S.prv===id){S.prv=null;updMonitors()}
+  S.sources=S.sources.filter(x=>x.id!==id);
+  delete S.volumes[id];
+  updSrcList();updTallies();updVolList();
+}
+
+function updSrcList(){
+  const el=document.getElementById('srclist');el.innerHTML='';
+  if(!S.sources.length){
+    el.innerHTML='<div style="text-align:center;color:var(--dim2);font-size:11px;padding:20px">Geen bronnen<br>Voeg een bron toe</div>';return;
+  }
+  const icons={hls:'📡',url:'🎬',webcam:'📷',screen:'🖥',twitch:'🟣',youtube:'▶️',test:'🎨'};
+  S.sources.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='src-item'+(s.id===S.pgm?' pgm':s.id===S.prv?' prv':'');
+    const isEmbed=s.type==='twitch'||s.type==='youtube';
+    d.innerHTML=`
+      <div class="src-tally"></div>
+      <span class="src-name">${icons[s.type]||'📺'} ${s.name}</span>
+      <span class="src-badge ${s.type}">${s.type}</span>
+      <button class="btn-rm" onclick="event.stopPropagation();removeSrc('${s.id}')" title="Verwijder">✕</button>
+    `;
+    d.addEventListener('click',()=>{S.prv=s.id;updMonitors();updTallies();updSrcList()});
+    el.appendChild(d);
+  });
+}
+
+function updVolList(){
+  const el=document.getElementById('vol-list');el.innerHTML='';
+  S.sources.filter(s=>s.type!=='twitch'&&s.type!=='youtube').forEach(s=>{
+    const row=document.createElement('div');row.style.marginBottom='7px';
+    row.innerHTML=`
+      <div style="font-size:10px;color:var(--dim);margin-bottom:2px">${s.name}</div>
+      <div class="volrow">
+        <span class="vollbl">🔊</span>
+        <input class="vol" type="range" min="0" max="1" step="0.01" value="${S.volumes[s.id]||1}" oninput="setVol('${s.id}',+this.value)">
+        <span style="font-size:10px;color:var(--dim);min-width:32px">${Math.round((S.volumes[s.id]||1)*100)}%</span>
+      </div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+function setVol(id,v){
+  S.volumes[id]=v;
+  S.cells.filter(c=>c.srcId===id).forEach(c=>{try{c.vid.volume=v}catch(e){}});
+  try{if(S.pgm===id)document.getElementById('pgm-vid').volume=v}catch(e){}
+  updVolList();
+}
+
+// ══════════════════════════════════════════════════
+// DEMO SOURCES
+// ══════════════════════════════════════════════════
+function addDemoSources(){
+  const demos=[
+    {name:'Camera 1',color:'#1a237e',text:'CAM 1'},
+    {name:'Camera 2',color:'#1b5e20',text:'CAM 2'},
+    {name:'Camera 3',color:'#b71c1c',text:'CAM 3'},
+    {name:'Camera 4',color:'#4a148c',text:'CAM 4'},
+  ];
+  demos.forEach(d=>{
+    if(S.sources.find(s=>s.name===d.name))return;
+    addSrc(d.name,'test',{stream:makeTestPattern(d.name,d.color,d.text)});
+  });
+}
+
+function makeTestPattern(label,bg,text){
+  const c=document.createElement('canvas');c.width=1920;c.height=1080;
+  const ctx=c.getContext('2d');
+  let t=0;
+  function draw(){
+    ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+    for(let x=0;x<c.width;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
+    for(let y=0;y<c.height;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 140px "Segoe UI",sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,c.width/2,c.height/2);
+    ctx.font='bold 40px "Segoe UI",sans-serif';ctx.fillStyle='rgba(255,255,255,.4)';
+    ctx.fillText(label,c.width/2,c.height/2+130);
+    const ts=new Date().toLocaleTimeString('nl-NL');
+    ctx.font='bold 52px monospace';ctx.fillStyle='rgba(255,255,255,.6)';
+    ctx.textAlign='right';ctx.fillText(ts,c.width-40,c.height-40);
+    t++;
+  }
+  draw();setInterval(draw,1000);
+  return c.captureStream(30);
+}
+
+// ══════════════════════════════════════════════════
+// SWITCHING
+// ══════════════════════════════════════════════════
+function doCut(){
+  const tmp=S.pgm;S.pgm=S.prv;S.prv=tmp;
+  updMonitors();updTallies();updSrcList();
+  if(obs.ok&&S.pgm){
+    const s=S.sources.find(x=>x.id===S.pgm);
+    if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentProgramScene',{sceneName:sc}).catch(()=>{})}
+  }
+  const btn=document.getElementById('btn-cut');
+  btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),150);
+}
+
+function doAuto(){
+  const dur=S.tdur;
+  const pgmVid=document.getElementById('pgm-vid');
+  pgmVid.style.transition=`opacity ${dur/2}ms ease`;pgmVid.style.opacity='0';
+  setTimeout(()=>{doCut();setTimeout(()=>{pgmVid.style.opacity='1';setTimeout(()=>pgmVid.style.transition='',dur/2+100)},50)},dur/2);
+}
+
+// ══════════════════════════════════════════════════
+// OBS
+// ══════════════════════════════════════════════════
+let obsConnecting=false;
+async function obsToggle(){
+  if(obs.ok){obs.disconnect();return}
+  if(obsConnecting)return;
+  obsConnecting=true;
+  const host=document.getElementById('obs-host').value||'localhost';
+  const port=document.getElementById('obs-port').value||'4455';
+  const pw=document.getElementById('obs-pw').value;
+  const btn=document.getElementById('obs-btn');
+  btn.textContent='Verbinden...';btn.disabled=true;
+  setCst('','Verbinden...');
+  obs.onUp=async()=>{
+    obsConnecting=false;btn.textContent='OBS loskoppelen';btn.disabled=false;
+    setCst('on','Verbonden');setPill('pill-obs',true);toast('Verbonden met OBS!');
+    try{
+      const{scenes,currentProgramSceneName}=await obs.req('GetSceneList');
+      S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();
+      const{transitions,currentSceneTransitionName}=await obs.req('GetSceneTransitionList');
+      S.obsTrans=transitions.map(t=>t.transitionName);S.obsTransCur=currentSceneTransitionName;renderOBSTrans();
+      const r=await obs.req('GetRecordStatus');S.rec=r.outputActive;if(S.rec)S.recT=Date.now();updRecUI();
+      const r2=await obs.req('GetStreamStatus');S.str=r2.outputActive;updStrUI();
+    }catch(e){}
+  };
+  obs.onDown=()=>{
+    obsConnecting=false;btn.textContent='Verbinden met OBS';btn.disabled=false;
+    setCst('','Niet verbonden');setPill('pill-obs',false);
+    document.getElementById('sclist').innerHTML='<div style="color:var(--dim2);font-size:11px">Verbind met OBS</div>';
+    document.getElementById('obs-trans-sec').style.display='none';
+    S.rec=false;S.str=false;updRecUI();updStrUI();
+  };
+  obs.onEvt=obsEvent;
+  try{await obs.connect(host,port,pw)}catch(e){
+    obsConnecting=false;btn.textContent='Verbinden met OBS';btn.disabled=false;
+    setCst('err',`Fout: ${e.message}`);toast(`OBS fout: ${e.message}`,'err');
+  }
+}
+
+function obsEvent(type,data){
+  if(type==='CurrentProgramSceneChanged'){S.obsScene=data.sceneName;renderScenes()}
+  else if(type==='RecordStateChanged'){S.rec=data.outputActive;if(S.rec)S.recT=Date.now();else S.recT=null;updRecUI()}
+  else if(type==='StreamStateChanged'){S.str=data.outputActive;updStrUI()}
+  else if(type==='CurrentSceneTransitionChanged'){S.obsTransCur=data.transitionName;renderOBSTrans()}
+  else if(['SceneListChanged','SceneCreated','SceneRemoved'].includes(type)){
+    obs.req('GetSceneList').then(({scenes,currentProgramSceneName})=>{S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes()}).catch(()=>{});
+  }
+}
+
+function renderScenes(){
+  const el=document.getElementById('sclist');el.innerHTML='';
+  S.obsScenes.forEach(n=>{
+    const it=document.createElement('div');it.className='scitem'+(n===S.obsScene?' active':'');
+    it.textContent=n;
+    it.onclick=()=>obs.req('SetCurrentProgramScene',{sceneName:n}).catch(e=>toast(e.message,'err'));
+    el.appendChild(it);
+  });
+}
+
+function renderOBSTrans(){
+  const sec=document.getElementById('obs-trans-sec');
+  if(!S.obsTrans.length){sec.style.display='none';return}
+  sec.style.display='block';
+  const el=document.getElementById('obs-trans-list');el.innerHTML='';
+  S.obsTrans.forEach(n=>{
+    const it=document.createElement('div');it.className='scitem'+(n===S.obsTransCur?' trans-active':'');
+    it.textContent=n;
+    it.onclick=()=>obs.req('SetCurrentSceneTransition',{transitionName:n}).then(()=>{S.obsTransCur=n;renderOBSTrans()}).catch(e=>toast(e.message,'err'));
+    el.appendChild(it);
+  });
+}
+
+async function toggleRec(){if(!obs.ok){toast('Verbind eerst met OBS','err');return}try{await obs.req(S.rec?'StopRecord':'StartRecord')}catch(e){toast(`Opname fout: ${e.message}`,'err')}}
+async function toggleStr(){if(!obs.ok){toast('Verbind eerst met OBS','err');return}try{await obs.req(S.str?'StopStream':'StartStream')}catch(e){toast(`Stream fout: ${e.message}`,'err')}}
+
+function updRecUI(){
+  const btn=document.getElementById('btn-rec'),pill=document.getElementById('pill-rec');
+  if(S.rec){btn.textContent='⏹ OPNAME STOPPEN';btn.classList.add('on');pill.classList.add('rec-on')}
+  else{btn.textContent='⏺ OPNAME STARTEN';btn.classList.remove('on');pill.classList.remove('rec-on')}
+}
+function updStrUI(){
+  const btn=document.getElementById('btn-str'),pill=document.getElementById('pill-live');
+  if(S.str){btn.textContent='⏹ STREAM STOPPEN';btn.classList.add('on');pill.classList.add('live-on')}
+  else{btn.textContent='📡 STREAM STARTEN';btn.classList.remove('on');pill.classList.remove('live-on')}
+}
+function setCst(cls,txt){
+  document.getElementById('cst-obs').className='cst'+(cls?' '+cls:'');
+  document.getElementById('cst-txt').textContent=txt;
+}
+function setPill(id,on){
+  const p=document.getElementById(id);
+  if(!p)return;
+  if(id==='pill-obs')p.classList.toggle('obs-on',on);
+  else if(id==='pill-mix')p.classList.toggle('mix-on',on);
+  else if(id==='pill-rec')p.classList.toggle('rec-on',on);
+  else if(id==='pill-live')p.classList.toggle('live-on',on);
+}
+
+// ══════════════════════════════════════════════════
+// MIXER CONTROLS
+// ══════════════════════════════════════════════════
+function toggleMixer(on){
+  document.getElementById('mix-body').style.display=on?'block':'none';
+  if(on)mixer.start();else mixer.stop();
+}
+function setMixMode(btn){
+  mixer.mode=btn.dataset.m;
+  document.querySelectorAll('.mmbtn').forEach(b=>b.classList.toggle('active',b===btn));
+}
+function setMixQ(btn){
+  mixer.setQuality(+btn.dataset.q);
+  document.querySelectorAll('.mqbtn').forEach(b=>b.classList.toggle('active',b===btn));
+  toast(`Kwaliteit: ${btn.dataset.q}p`);
+}
+function toggleMixRec(){
+  if(!mixer.running){toast('Schakel de mixer eerst in','err');return}
+  mixer.recActive?mixer.stopRec():mixer.startRec();
+}
+
+// ══════════════════════════════════════════════════
+// ADD SOURCE MODAL
+// ══════════════════════════════════════════════════
+function openAddSrc(){
+  document.getElementById('src-name').value=`Camera ${S.sources.length+1}`;
+  document.getElementById('src-url').value='';
+  document.getElementById('twitch-ch').value='';
+  document.getElementById('yt-url').value='';
+  pickTypeByVal('url');
+  openModal('add-modal');
+  navigator.mediaDevices?.enumerateDevices().then(devs=>{
+    const cams=devs.filter(d=>d.kind==='videoinput');
+    const sel=document.getElementById('cam-sel');
+    sel.innerHTML=cams.length?cams.map((d,i)=>`<option value="${d.deviceId}">${d.label||`Camera ${i+1}`}</option>`).join(''):'<option>Geen camera</option>';
+  }).catch(()=>{});
+}
+
+function pickType(btn){pickTypeByVal(btn.dataset.st)}
+
+const HINTS={
+  url:'Directe video URL: MP4, WebM, MKV, of andere directe videolink',
+  hls:'HLS stream URL (.m3u8) — IPTV streams, eigen relay server, CDN streams',
+  twitch:'',youtube:'',
+  webcam:'Gebruik een webcam of externe USB-camera',
+  screen:'Deel je scherm, venster of browsertabblad',
+};
+
+function pickTypeByVal(type){
+  S.selType=type;
+  document.querySelectorAll('.typebtn').forEach(b=>b.classList.toggle('active',b.dataset.st===type));
+  document.getElementById('url-row').style.display=(type==='url'||type==='hls')?'block':'none';
+  document.getElementById('twitch-row').style.display=type==='twitch'?'block':'none';
+  document.getElementById('yt-row').style.display=type==='youtube'?'block':'none';
+  document.getElementById('cam-row').style.display=type==='webcam'?'block':'none';
+  const hint=document.getElementById('url-hint');
+  if(hint)hint.textContent=HINTS[type]||'';
+  const urlLbl=document.getElementById('url-lbl');
+  if(urlLbl)urlLbl.textContent=type==='hls'?'HLS URL (.m3u8)':'Video URL';
+  const urlPh=document.getElementById('src-url');
+  if(urlPh)urlPh.placeholder=type==='hls'?'https://server.nl/live/stream.m3u8':'https://voorbeeld.com/video.mp4';
+}
+
+// Extract YouTube video ID from URL
+function extractYtId(input){
+  input=input.trim();
+  // youtu.be/ID
+  let m=input.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];
+  // ?v=ID or &v=ID
+  m=input.match(/[?&]v=([a-zA-Z0-9_-]{11})/);if(m)return m[1];
+  // /embed/ID
+  m=input.match(/embed\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];
+  // /live_stream?channel=... -> channel based, use as-is with channel
+  m=input.match(/channel\/([a-zA-Z0-9_-]+)/);if(m)return null; // channel based
+  // bare 11-char ID
+  if(/^[a-zA-Z0-9_-]{11}$/.test(input))return input;
+  return null;
+}
+
+function extractTwitchChannel(input){
+  input=input.trim();
+  // twitch.tv/channel
+  const m=input.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+  if(m)return m[1];
+  // bare channel name
+  if(/^[a-zA-Z0-9_]+$/.test(input))return input;
+  return input;
+}
+
+async function confirmAdd(){
+  const name=document.getElementById('src-name').value.trim()||'Bron';
+  const type=S.selType;
+  closeModal('add-modal');
+
+  if(type==='twitch'){
+    const ch=extractTwitchChannel(document.getElementById('twitch-ch').value);
+    if(!ch){toast('Voer een Twitch kanaalnaam in','err');return}
+    addSrc(name,'twitch',{channel:ch});
+  }else if(type==='youtube'){
+    const raw=document.getElementById('yt-url').value.trim();
+    const ytId=extractYtId(raw);
+    if(!ytId){toast('Kan geen YouTube video ID vinden in de URL','err');return}
+    addSrc(name,'youtube',{ytId});
+  }else if(type==='webcam'){
+    const devId=document.getElementById('cam-sel').value;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:devId?{deviceId:{exact:devId}}:true,audio:true});
+      addSrc(name,'webcam',{stream});
+    }catch(e){toast('Webcam toegang geweigerd','err')}
+  }else if(type==='screen'){
+    try{
+      const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+      addSrc(name,'screen',{stream});
+    }catch(e){toast('Scherm delen geannuleerd','err')}
+  }else{
+    const url=document.getElementById('src-url').value.trim();
+    if(!url){toast('Voer een URL in','err');return}
+    addSrc(name,type,{url});
+  }
+}
+
+function selTrans(btn){
+  S.selTrans=btn.dataset.t;
+  document.querySelectorAll('.trb').forEach(b=>b.classList.toggle('active',b===btn));
+  if(obs.ok)obs.req('SetCurrentSceneTransition',{transitionName:btn.dataset.t}).catch(()=>{});
+}
+
+function tdurChange(v){
+  S.tdur=+v;document.getElementById('tdur-lbl').textContent=v+'ms';
+  if(obs.ok)obs.req('SetCurrentSceneTransitionDuration',{transitionDuration:+v}).catch(()=>{});
+}
+
+function openModal(id){document.getElementById(id).classList.remove('hidden')}
+function closeModal(id){document.getElementById(id).classList.add('hidden')}
+function toggleFS(){!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen()}
+
+// ══════════════════════════════════════════════════
+// CLOCK & TIMERS
+// ══════════════════════════════════════════════════
+function tick(){
+  const now=new Date(),p=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=`${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  if(S.rec&&S.recT){
+    const e=Math.floor((Date.now()-S.recT)/1000),h=Math.floor(e/3600),m=Math.floor((e%3600)/60),s=e%60;
+    const ts=`${p(h)}:${p(m)}:${p(s)}`;
+    document.getElementById('rec-timer').textContent=ts;
+    document.getElementById('hdr-rec-t').textContent=ts;
+  }else if(!S.rec)document.getElementById('hdr-rec-t').textContent='';
+}
+
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';
+  el.style.borderLeftColor=type==='err'?'var(--pgm)':'var(--prv)';
+  clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3500);
+}
+
+// ══════════════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  switch(e.key){
+    case ' ':e.preventDefault();doCut();break;
+    case 'Enter':e.preventDefault();doAuto();break;
+    case 'f':case 'F':toggleFS();break;
+    case 'r':case 'R':toggleRec();break;
+    case 's':case 'S':toggleStr();break;
+    case 'm':case 'M':toggleMixRec();break;
+    default:const n=parseInt(e.key);if(n>=1&&n<=9){const src=S.sources[n-1];if(src){S.prv=src.id;updMonitors();updTallies();updSrcList()}}
+  }
+});
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+mixer.init();
+setLayout(4);
+setInterval(tick,1000);
+tick();
+updSrcList();updRecUI();updStrUI();
+</script>
+</body>
+</html>
