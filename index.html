@@ -206,9 +206,17 @@ body::before{
 .layout-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
 .layout-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .layout-6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
+.layout-8{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr}
 .layout-9{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
+.layout-10{grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr}
+.layout-12{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr)}
+.layout-16{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
 .layout-1p4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(4,1fr)}
 .layout-1p4 .mvcell:first-child{grid-row:1/5}
+.layout-1p5{grid-template-columns:3fr 1fr;grid-template-rows:repeat(5,1fr)}
+.layout-1p5 .mvcell:first-child{grid-row:1/6}
+.layout-1p7{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}
+.layout-1p7 .mvcell:first-child{grid-row:1/5;grid-column:1/2}
 
 .mvcell{
   position:relative;background:#080810;cursor:pointer;
@@ -574,11 +582,17 @@ kbd{
         <div class="ptitle">Layout</div>
         <div class="lp">
           <button class="lpbtn" data-l="1" onclick="setLayout(1)">Solo</button>
+          <button class="lpbtn" data-l="2" onclick="setLayout(2)">Side</button>
           <button class="lpbtn active" data-l="4" onclick="setLayout(4)">2×2</button>
           <button class="lpbtn" data-l="6" onclick="setLayout(6)">2×3</button>
+          <button class="lpbtn" data-l="8" onclick="setLayout(8)">2×4</button>
           <button class="lpbtn" data-l="9" onclick="setLayout(9)">3×3</button>
-          <button class="lpbtn" data-l="2" onclick="setLayout(2)">Side</button>
+          <button class="lpbtn" data-l="10" onclick="setLayout(10)">2×5</button>
+          <button class="lpbtn" data-l="12" onclick="setLayout(12)">3×4</button>
+          <button class="lpbtn" data-l="16" onclick="setLayout(16)">4×4</button>
           <button class="lpbtn" data-l="1p4" onclick="setLayout('1p4')">1+4</button>
+          <button class="lpbtn" data-l="1p5" onclick="setLayout('1p5')">1+5</button>
+          <button class="lpbtn" data-l="1p7" onclick="setLayout('1p7')">1+7</button>
         </div>
       </div>
     </div>
@@ -588,7 +602,8 @@ kbd{
       <div class="psec">
         <div class="ptitle">OBS Bronnen</div>
         <div style="font-size:10px;color:var(--dim);margin-bottom:8px">
-          Klik thumbnail → cel toewijzen<br>Live preview via OBS screenshots
+          Klik → cel toewijzen &nbsp;|&nbsp; Rechts-klik → toon/verberg in OBS<br>
+          Shift+klik → zichtbaarheid wisselen
         </div>
         <button class="btn btn-o btn-block" style="font-size:11px;margin-bottom:5px" onclick="refreshOBSSources()">↺ Bronnen verversen</button>
       </div>
@@ -663,6 +678,15 @@ kbd{
         <input type="range" min="100" max="3000" step="100" value="500" id="tdur" oninput="tdurChange(this.value)">
         <span class="sdur" id="tdur-lbl">500ms</span>
       </div>
+    </div>
+
+    <!-- Scene ↔ Source linking -->
+    <div class="psec" id="scene-link-sec" style="display:none">
+      <div class="ptitle">Scène ↔ Bron koppeling</div>
+      <div style="font-size:10px;color:var(--dim);margin-bottom:7px">
+        Koppel bronnen aan OBS scènes — switching synchroniseert automatisch
+      </div>
+      <div id="scene-link-list" style="max-height:180px;overflow-y:auto"></div>
     </div>
 
     <!-- OBS Transitions list -->
@@ -769,12 +793,14 @@ kbd{
 <div id="helpbar">
   <span><kbd>Space</kbd> CUT</span>
   <span><kbd>Enter</kbd> AUTO</span>
-  <span><kbd>1–9</kbd> Preview</span>
+  <span><kbd>1–9</kbd> Preview + OBS sync</span>
   <span><kbd>F</kbd> Volledig scherm</span>
   <span><kbd>R</kbd> Opname</span>
   <span><kbd>M</kbd> Mixer opname</span>
   <span><kbd>T</kbd> Timer</span>
   <span>Rechts-klik cel → bron</span>
+  <span>Rechts-klik OBS scène → PRV</span>
+  <span>Rechts-klik OBS bron → toon/verberg</span>
 </div>
 
 <!-- MODAL -->
@@ -964,8 +990,9 @@ const obs=new OBSWs();
 const S={
   sources:[],cells:[],pgm:null,prv:null,layout:4,selType:'url',
   tdur:500,rec:false,str:false,recT:null,
-  obsScenes:[],obsScene:null,obsTrans:[],obsTransCur:null,
-  obsInputs:[],
+  obsScenes:[],obsScene:null,obsPreviewScene:null,obsTrans:[],obsTransCur:null,
+  obsInputs:[],obsStudioMode:false,
+  sceneLinks:{}, // sourceId → obsSceneName mapping
   volumes:{},nid:1,
   thumbTimers:{},
   assignSrc:null, // for OBS source assignment
@@ -1003,8 +1030,8 @@ function iframeSrc(src){
 // ══════════════════════════════════════════════════
 // LAYOUT / CELLS
 // ══════════════════════════════════════════════════
-const LAYOUTS={1:'layout-1',2:'layout-2',4:'layout-4',6:'layout-6',9:'layout-9','1p4':'layout-1p4'};
-const COUNTS={1:1,2:2,4:4,6:6,9:9,'1p4':5};
+const LAYOUTS={1:'layout-1',2:'layout-2',4:'layout-4',6:'layout-6',8:'layout-8',9:'layout-9',10:'layout-10',12:'layout-12',16:'layout-16','1p4':'layout-1p4','1p5':'layout-1p5','1p7':'layout-1p7'};
+const COUNTS={1:1,2:2,4:4,6:6,8:8,9:9,10:10,12:12,16:16,'1p4':5,'1p5':6,'1p7':8};
 
 function setLayout(l){
   S.layout=l;
@@ -1031,8 +1058,8 @@ function makeCell(idx,srcId){
   const ns=document.createElement('div');ns.className='nosig';ns.innerHTML=`<div class="icon">📺</div><div class="txt">Cel ${idx+1}</div>`;el.appendChild(ns);
   const nomix=document.createElement('div');nomix.className='nomix-warn';nomix.textContent='⚠ Embed';el.appendChild(nomix);
   const cell={el,vid,iframe,snap,srcId,isEmbed:false};
-  el.addEventListener('click',()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList()}});
-  el.addEventListener('dblclick',()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList()}});
+  el.addEventListener('click',()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}});
+  el.addEventListener('dblclick',()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPgm()}});
   el.addEventListener('contextmenu',e=>{e.preventDefault();showCtx(cell,e.clientX,e.clientY)});
   if(srcId)setCell(cell,srcId);
   return cell;
@@ -1135,36 +1162,88 @@ async function loadOBSSources(){
   try{
     const{inputs}=await obs.req('GetInputList');
     S.obsInputs=inputs||[];
-    renderOBSSourceGrid();
-    // Also fetch scene items for current scene
+    // Fetch scene items for current scene (includes visibility)
     if(S.obsScene){
       try{
         const{sceneItems}=await obs.req('GetSceneItemList',{sceneName:S.obsScene});
-        S.obsSceneItems=sceneItems||[];
-      }catch(e){}
+        S.obsSceneItems=(sceneItems||[]).reverse();
+      }catch(e){S.obsSceneItems=[]}
     }
-    // Start periodic thumbnail update for OBS grid
+    renderOBSSourceGrid();
     startObsThumbLoop();
   }catch(e){console.warn('loadOBSSources:',e)}
 }
 
 function renderOBSSourceGrid(){
   const grid=document.getElementById('obs-src-grid');grid.innerHTML='';
-  if(!S.obsInputs.length){
+  if(!S.obsInputs.length&&!(S.obsSceneItems||[]).length){
     grid.innerHTML='<div class="obs-empty" style="grid-column:1/-1">Geen OBS bronnen gevonden</div>';return;
   }
-  S.obsInputs.forEach(inp=>{
-    const div=document.createElement('div');div.className='obs-thumb';
-    div.dataset.obsname=inp.inputName;
-    div.innerHTML=`
-      <img src="" alt="" style="min-height:100%;object-fit:cover">
-      <div class="tname">${inp.inputName}</div>
-      <div class="ttype">${(inp.inputKind||'').replace('_source','').replace('_input','')}</div>
-      <div class="tuse">+ Toevoegen</div>
-    `;
-    div.addEventListener('click',()=>openObsAssign(inp.inputName));
-    grid.appendChild(div);
-  });
+  // Show scene items (these are the sources IN the current scene, with visibility)
+  if(S.obsSceneItems&&S.obsSceneItems.length){
+    const hdr=document.createElement('div');
+    hdr.style.cssText='grid-column:1/-1;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:4px 2px;border-bottom:1px solid var(--border)';
+    hdr.textContent=`📺 Scène: ${S.obsScene||'?'} (${S.obsSceneItems.length})`;
+    grid.appendChild(hdr);
+    S.obsSceneItems.forEach(item=>{
+      const div=document.createElement('div');div.className='obs-thumb';
+      div.dataset.obsname=item.sourceName;
+      div.style.opacity=item.sceneItemEnabled?'1':'.35';
+      const eyeIcon=item.sceneItemEnabled?'👁':'👁‍🗨';
+      div.innerHTML=`
+        <img src="" alt="" style="min-height:100%;object-fit:cover">
+        <div class="tname">${item.sourceName}</div>
+        <div class="ttype">${(item.inputKind||item.sourceType||'').replace('_source','').replace('_input','')}</div>
+        <div class="tuse" style="flex-direction:column;gap:3px">
+          <span>+ Toevoegen</span>
+          <span style="font-size:9px">${eyeIcon} Klik om zichtbaarheid te wisselen</span>
+        </div>
+      `;
+      div.addEventListener('click',(e)=>{
+        if(e.shiftKey||e.ctrlKey){
+          // Toggle visibility in OBS
+          toggleSceneItemVisibility(item);
+        }else{
+          openObsAssign(item.sourceName);
+        }
+      });
+      // Right-click = toggle visibility
+      div.addEventListener('contextmenu',(e)=>{
+        e.preventDefault();toggleSceneItemVisibility(item);
+      });
+      grid.appendChild(div);
+    });
+  }
+  // Also show all inputs
+  if(S.obsInputs.length){
+    const hdr2=document.createElement('div');
+    hdr2.style.cssText='grid-column:1/-1;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:4px 2px;border-bottom:1px solid var(--border);margin-top:4px';
+    hdr2.textContent=`🎛 Alle bronnen (${S.obsInputs.length})`;
+    grid.appendChild(hdr2);
+    S.obsInputs.forEach(inp=>{
+      const div=document.createElement('div');div.className='obs-thumb';
+      div.dataset.obsname=inp.inputName;
+      div.innerHTML=`
+        <img src="" alt="" style="min-height:100%;object-fit:cover">
+        <div class="tname">${inp.inputName}</div>
+        <div class="ttype">${(inp.inputKind||'').replace('_source','').replace('_input','')}</div>
+        <div class="tuse">+ Toevoegen</div>
+      `;
+      div.addEventListener('click',()=>openObsAssign(inp.inputName));
+      grid.appendChild(div);
+    });
+  }
+}
+
+async function toggleSceneItemVisibility(item){
+  if(!obs.ok||!S.obsScene)return;
+  try{
+    const newEnabled=!item.sceneItemEnabled;
+    await obs.req('SetSceneItemEnabled',{sceneName:S.obsScene,sceneItemId:item.sceneItemId,sceneItemEnabled:newEnabled});
+    item.sceneItemEnabled=newEnabled;
+    renderOBSSourceGrid();
+    toast(`${item.sourceName}: ${newEnabled?'zichtbaar 👁':'verborgen 👁‍🗨'}`);
+  }catch(e){toast(`Fout: ${e.message}`,'err')}
 }
 
 let obsThumbLoop=null;
@@ -1272,7 +1351,7 @@ function updSrcList(){
       <span class="src-badge ${s.type}">${s.type==='obssnap'?'OBS':s.type}</span>
       <button class="btn-rm" onclick="event.stopPropagation();removeSrc('${s.id}')">✕</button>
     `;
-    d.addEventListener('click',()=>{S.prv=s.id;updMonitors();updTallies();updSrcList()});
+    d.addEventListener('click',()=>{S.prv=s.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()});
     el.appendChild(d);
   });
 }
@@ -1335,16 +1414,33 @@ function makeTestPattern(label,bg,text){
 function doCut(){
   const tmp=S.pgm;S.pgm=S.prv;S.prv=tmp;
   updMonitors();updTallies();updSrcList();
-  if(obs.ok&&S.pgm){
-    const s=S.sources.find(x=>x.id===S.pgm);
-    if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentProgramScene',{sceneName:sc}).catch(()=>{})}
-  }
+  syncOBSFromPgm();syncOBSFromPrv();
   const btn=document.getElementById('btn-cut');
   btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),150);
 }
 
+// ── OBS ↔ StreamManager bidirectional sync ──
+function syncOBSFromPgm(){
+  if(!obs.ok||!S.pgm)return;
+  // Check if source has a linked OBS scene
+  const linked=S.sceneLinks[S.pgm];
+  if(linked){obs.req('SetCurrentProgramScene',{sceneName:linked}).catch(()=>{});return}
+  // Fallback: match by name
+  const s=S.sources.find(x=>x.id===S.pgm);
+  if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentProgramScene',{sceneName:sc}).catch(()=>{})}
+}
+function syncOBSFromPrv(){
+  if(!obs.ok||!S.prv||!S.obsStudioMode)return;
+  const linked=S.sceneLinks[S.prv];
+  if(linked){obs.req('SetCurrentPreviewScene',{sceneName:linked}).catch(()=>{});return}
+  const s=S.sources.find(x=>x.id===S.prv);
+  if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentPreviewScene',{sceneName:sc}).catch(()=>{})}
+}
+
 function doAuto(){
   const dur=S.tdur;
+  // Trigger OBS transition if in studio mode
+  if(obs.ok&&S.obsStudioMode){obs.req('TriggerStudioModeTransition').catch(()=>{})}
   const pgmVid=document.getElementById('pgm-vid');
   pgmVid.style.transition=`opacity ${dur/2}ms ease`;pgmVid.style.opacity='0';
   setTimeout(()=>{doCut();setTimeout(()=>{pgmVid.style.opacity='1';setTimeout(()=>pgmVid.style.transition='',dur/2+100)},50)},dur/2);
@@ -1368,13 +1464,18 @@ async function obsToggle(){
     obsConnecting=false;btn.textContent='OBS loskoppelen';btn.disabled=false;
     setCst('on','Verbonden ✓');setPill('pill-obs',true);toast('Verbonden met OBS! 🎬');
     document.getElementById('stats-sec').style.display='block';
+    document.getElementById('scene-link-sec').style.display='block';
     try{
+      // Enable Studio Mode for PRV/PGM sync
+      try{await obs.req('SetStudioModeEnabled',{studioModeEnabled:true});S.obsStudioMode=true;toast('OBS Studio Mode ingeschakeld 🎬')}catch(e){S.obsStudioMode=false}
       const{scenes,currentProgramSceneName}=await obs.req('GetSceneList');
       S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();
       const{transitions,currentSceneTransitionName}=await obs.req('GetSceneTransitionList');
       S.obsTrans=transitions.map(t=>t.transitionName);S.obsTransCur=currentSceneTransitionName;renderOBSTrans();
       const r=await obs.req('GetRecordStatus');S.rec=r.outputActive;if(S.rec)S.recT=Date.now();updRecUI();
       const r2=await obs.req('GetStreamStatus');S.str=r2.outputActive;updStrUI();
+      // Auto-link OBS scenes to sources with matching names
+      autoLinkScenes();
     }catch(e){}
     await loadOBSSources();
     statsInterval=setInterval(fetchOBSStats,3000);
@@ -1385,6 +1486,8 @@ async function obsToggle(){
     document.getElementById('sclist').innerHTML='<div style="color:var(--dim2);font-size:11px">Verbind met OBS</div>';
     document.getElementById('obs-trans-sec').style.display='none';
     document.getElementById('stats-sec').style.display='none';
+    document.getElementById('scene-link-sec').style.display='none';
+    S.obsStudioMode=false;
     S.rec=false;S.str=false;updRecUI();updStrUI();
     if(statsInterval){clearInterval(statsInterval);statsInterval=null}
     if(obsThumbLoop){clearInterval(obsThumbLoop);obsThumbLoop=null}
@@ -1436,33 +1539,71 @@ function handleVUMeters(data){
 }
 
 function obsEvent(type,data){
-  if(type==='CurrentProgramSceneChanged'){S.obsScene=data.sceneName;renderScenes()}
+  if(type==='CurrentProgramSceneChanged'){
+    S.obsScene=data.sceneName;renderScenes();
+    // Reverse sync: OBS → StreamManager PGM
+    const linked=Object.entries(S.sceneLinks).find(([sid,sc])=>sc===data.sceneName);
+    if(linked){const srcId=linked[0];if(srcId!==S.pgm){S.pgm=srcId;updMonitors();updTallies();updSrcList()}}
+  }
+  else if(type==='CurrentPreviewSceneChanged'){
+    S.obsPreviewScene=data.sceneName;
+    // Reverse sync: OBS → StreamManager PRV
+    const linked=Object.entries(S.sceneLinks).find(([sid,sc])=>sc===data.sceneName);
+    if(linked){const srcId=linked[0];if(srcId!==S.prv){S.prv=srcId;updMonitors();updTallies();updSrcList()}}
+  }
+  else if(type==='StudioModeStateChanged'){S.obsStudioMode=data.studioModeEnabled}
   else if(type==='RecordStateChanged'){S.rec=data.outputActive;if(S.rec)S.recT=Date.now();else S.recT=null;updRecUI()}
   else if(type==='StreamStateChanged'){S.str=data.outputActive;updStrUI()}
   else if(type==='CurrentSceneTransitionChanged'){S.obsTransCur=data.transitionName;renderOBSTrans()}
   else if(type==='InputVolumeMeters'){handleVUMeters(data)}
   else if(['SceneListChanged','SceneCreated','SceneRemoved'].includes(type)){
     obs.req('GetSceneList').then(({scenes,currentProgramSceneName})=>{
-      S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();
+      S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();renderSceneLinks();
     }).catch(()=>{});
   }
   else if(type==='InputCreated'||type==='InputRemoved'){loadOBSSources().catch(()=>{})}
+  else if(type==='SceneItemCreated'||type==='SceneItemRemoved'){loadOBSSources().catch(()=>{})}
 }
 
 function renderScenes(){
   const el=document.getElementById('sclist');el.innerHTML='';
+  // Quick-add all scenes button
+  if(S.obsScenes.length>0){
+    const addAll=document.createElement('div');
+    addAll.style.cssText='padding:5px 8px;margin-bottom:5px;cursor:pointer;border-radius:5px;font-size:10px;color:var(--blue);background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);text-align:center;font-weight:700;transition:all .2s';
+    addAll.textContent='⚡ Alle scènes als bronnen toevoegen';
+    addAll.onmouseenter=()=>addAll.style.background='rgba(79,142,247,.15)';
+    addAll.onmouseleave=()=>addAll.style.background='rgba(79,142,247,.08)';
+    addAll.onclick=()=>{
+      let added=0;
+      S.obsScenes.forEach(n=>{
+        if(S.sources.find(s=>s.type==='obssnap'&&s.obsName===n))return;
+        const id=String(S.nid++);S.volumes[id]=1;
+        S.sources.push({id,name:n,type:'obssnap',obsName:n,url:'',stream:null});
+        S.sceneLinks[id]=n; // auto-link
+        const ec=S.cells.find(c=>!c.srcId);if(ec)setCell(ec,id);
+        if(!S.pgm){S.pgm=id;updMonitors()}else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}
+        added++;
+      });
+      if(added){updSrcList();updTallies();updVolList();renderSceneLinks();toast(`${added} scènes toegevoegd & gekoppeld ⚡`)}
+      else toast('Alle scènes zijn al toegevoegd');
+    };
+    el.appendChild(addAll);
+  }
   S.obsScenes.forEach(n=>{
-    const it=document.createElement('div');it.className='scitem'+(n===S.obsScene?' active':'');
-    it.innerHTML=`<span style="flex:1">${n}</span>`;
+    const isPgm=n===S.obsScene;
+    const isPrv=n===S.obsPreviewScene;
+    const it=document.createElement('div');it.className='scitem'+(isPgm?' active':'')+(isPrv?' trans-active':'');
+    const statusBadge=isPgm?'<span style="font-size:8px;background:var(--pgm);color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px">PGM</span>':
+      isPrv?'<span style="font-size:8px;background:var(--prv);color:#000;padding:1px 5px;border-radius:3px;margin-left:4px">PRV</span>':'';
+    it.innerHTML=`<span style="flex:1">${n}${statusBadge}</span>`;
     it.onclick=()=>obs.req('SetCurrentProgramScene',{sceneName:n}).catch(e=>toast(e.message,'err'));
+    // Right-click → set as preview
+    it.oncontextmenu=(e)=>{e.preventDefault();if(S.obsStudioMode)obs.req('SetCurrentPreviewScene',{sceneName:n}).catch(e2=>toast(e2.message,'err'))};
     el.appendChild(it);
-    // Fetch thumbnail async
     if(obs.ok){
       obs.req('GetSourceScreenshot',{sourceName:n,imageFormat:'jpeg',imageWidth:96,imageHeight:54,imageCompressionQuality:60}).then(r=>{
-        if(r.imageData){
-          const img=document.createElement('img');img.className='scitem-thumb';img.src=r.imageData;
-          it.insertBefore(img,it.firstChild);
-        }
+        if(r.imageData){const img=document.createElement('img');img.className='scitem-thumb';img.src=r.imageData;it.insertBefore(img,it.firstChild)}
       }).catch(()=>{});
     }
   });
@@ -1478,6 +1619,37 @@ function renderOBSTrans(){
     it.textContent=n;
     it.onclick=()=>obs.req('SetCurrentSceneTransition',{transitionName:n}).then(()=>{S.obsTransCur=n;renderOBSTrans()}).catch(e=>toast(e.message,'err'));
     el.appendChild(it);
+  });
+}
+
+// Auto-link scenes ↔ sources by matching names
+function autoLinkScenes(){
+  S.sources.forEach(src=>{
+    const match=S.obsScenes.find(sc=>sc.toLowerCase()===src.name.toLowerCase()
+      ||sc.toLowerCase().includes(src.name.toLowerCase())
+      ||src.name.toLowerCase().includes(sc.toLowerCase()));
+    if(match&&!S.sceneLinks[src.id])S.sceneLinks[src.id]=match;
+  });
+  renderSceneLinks();
+}
+
+function renderSceneLinks(){
+  const el=document.getElementById('scene-link-list');if(!el)return;el.innerHTML='';
+  if(!S.sources.length){el.innerHTML='<div style="color:var(--dim2);font-size:10px">Voeg bronnen toe</div>';return}
+  S.sources.forEach(src=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:5px';
+    const lbl=document.createElement('span');lbl.style.cssText='flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    lbl.textContent=src.name;
+    const sel=document.createElement('select');sel.className='inp inp-sm';sel.style.cssText='flex:1;margin:0';
+    sel.innerHTML=`<option value="">-- geen --</option>`+S.obsScenes.map(sc=>`<option value="${sc}"${S.sceneLinks[src.id]===sc?' selected':''}>${sc}</option>`).join('');
+    sel.onchange=()=>{
+      if(sel.value)S.sceneLinks[src.id]=sel.value;else delete S.sceneLinks[src.id];
+      toast(`${src.name} → ${sel.value||'geen koppeling'}`);
+    };
+    const dot=document.createElement('div');
+    dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${S.sceneLinks[src.id]?'var(--prv)':'var(--dim2)'};flex-shrink:0`;
+    row.appendChild(dot);row.appendChild(lbl);row.appendChild(sel);el.appendChild(row);
   });
 }
 
@@ -1528,8 +1700,8 @@ function showCtx(cell,x,y){
     cl.onclick=()=>{setCell(cell,null);m.remove()};m.appendChild(cl);
   }
   const sep2=document.createElement('div');sep2.className='ctxsep';m.appendChild(sep2);
-  [{txt:'🔴 Naar PROGRAM',fn:()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList()}}},
-   {txt:'🟢 Naar PREVIEW',fn:()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList()}}}]
+  [{txt:'🔴 Naar PROGRAM',fn:()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPgm()}}},
+   {txt:'🟢 Naar PREVIEW',fn:()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}}]
   .forEach(({txt,fn})=>{
     const it=document.createElement('div');it.className='ctxitem';it.innerHTML=txt;
     it.onclick=()=>{fn();m.remove()};m.appendChild(it);
@@ -1707,7 +1879,7 @@ document.addEventListener('keydown',e=>{
     case 't':case 'T':timerStartStop();break;
     default:
       const n=parseInt(e.key);
-      if(n>=1&&n<=9){const src=S.sources[n-1];if(src){S.prv=src.id;updMonitors();updTallies();updSrcList()}}
+      if(n>=1&&n<=9){const src=S.sources[n-1];if(src){S.prv=src.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}
   }
 });
 
