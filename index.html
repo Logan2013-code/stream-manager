@@ -204,19 +204,31 @@ body::before{
 }
 .layout-1{grid-template-columns:1fr;grid-template-rows:1fr}
 .layout-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+.layout-3{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr}
 .layout-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .layout-6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
 .layout-8{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr}
 .layout-9{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
 .layout-10{grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr}
 .layout-12{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr)}
+.layout-15{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr)}
 .layout-16{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
+.layout-20{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr)}
+.layout-24{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,1fr)}
+.layout-25{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)}
+.layout-30{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,1fr)}
+.layout-36{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr)}
 .layout-1p4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(4,1fr)}
 .layout-1p4 .mvcell:first-child{grid-row:1/5}
 .layout-1p5{grid-template-columns:3fr 1fr;grid-template-rows:repeat(5,1fr)}
 .layout-1p5 .mvcell:first-child{grid-row:1/6}
 .layout-1p7{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}
 .layout-1p7 .mvcell:first-child{grid-row:1/5;grid-column:1/2}
+.layout-1p9{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(5,1fr)}
+.layout-1p9 .mvcell:first-child{grid-row:1/6;grid-column:1/2}
+.layout-2p8{grid-template-columns:1fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}
+.layout-2p8 .mvcell:nth-child(1){grid-row:1/3;grid-column:1/2}
+.layout-2p8 .mvcell:nth-child(2){grid-row:1/3;grid-column:2/3}
 
 .mvcell{
   position:relative;background:#080810;cursor:pointer;
@@ -581,18 +593,29 @@ kbd{
       <div class="psec">
         <div class="ptitle">Layout</div>
         <div class="lp">
-          <button class="lpbtn" data-l="1" onclick="setLayout(1)">Solo</button>
-          <button class="lpbtn" data-l="2" onclick="setLayout(2)">Side</button>
+          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Grid</div>
+          <button class="lpbtn" data-l="1" onclick="setLayout(1)">1</button>
+          <button class="lpbtn" data-l="2" onclick="setLayout(2)">2</button>
+          <button class="lpbtn" data-l="3" onclick="setLayout(3)">3</button>
           <button class="lpbtn active" data-l="4" onclick="setLayout(4)">2×2</button>
           <button class="lpbtn" data-l="6" onclick="setLayout(6)">2×3</button>
           <button class="lpbtn" data-l="8" onclick="setLayout(8)">2×4</button>
           <button class="lpbtn" data-l="9" onclick="setLayout(9)">3×3</button>
           <button class="lpbtn" data-l="10" onclick="setLayout(10)">2×5</button>
           <button class="lpbtn" data-l="12" onclick="setLayout(12)">3×4</button>
+          <button class="lpbtn" data-l="15" onclick="setLayout(15)">3×5</button>
           <button class="lpbtn" data-l="16" onclick="setLayout(16)">4×4</button>
+          <button class="lpbtn" data-l="20" onclick="setLayout(20)">4×5</button>
+          <button class="lpbtn" data-l="24" onclick="setLayout(24)">4×6</button>
+          <button class="lpbtn" data-l="25" onclick="setLayout(25)">5×5</button>
+          <button class="lpbtn" data-l="30" onclick="setLayout(30)">5×6</button>
+          <button class="lpbtn" data-l="36" onclick="setLayout(36)">6×6</button>
+          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:5px 0 3px">Multiview</div>
           <button class="lpbtn" data-l="1p4" onclick="setLayout('1p4')">1+4</button>
           <button class="lpbtn" data-l="1p5" onclick="setLayout('1p5')">1+5</button>
           <button class="lpbtn" data-l="1p7" onclick="setLayout('1p7')">1+7</button>
+          <button class="lpbtn" data-l="1p9" onclick="setLayout('1p9')">1+9</button>
+          <button class="lpbtn" data-l="2p8" onclick="setLayout('2p8')">2+8</button>
         </div>
       </div>
     </div>
@@ -1030,8 +1053,8 @@ function iframeSrc(src){
 // ══════════════════════════════════════════════════
 // LAYOUT / CELLS
 // ══════════════════════════════════════════════════
-const LAYOUTS={1:'layout-1',2:'layout-2',4:'layout-4',6:'layout-6',8:'layout-8',9:'layout-9',10:'layout-10',12:'layout-12',16:'layout-16','1p4':'layout-1p4','1p5':'layout-1p5','1p7':'layout-1p7'};
-const COUNTS={1:1,2:2,4:4,6:6,8:8,9:9,10:10,12:12,16:16,'1p4':5,'1p5':6,'1p7':8};
+const LAYOUTS={1:'layout-1',2:'layout-2',3:'layout-3',4:'layout-4',6:'layout-6',8:'layout-8',9:'layout-9',10:'layout-10',12:'layout-12',15:'layout-15',16:'layout-16',20:'layout-20',24:'layout-24',25:'layout-25',30:'layout-30',36:'layout-36','1p4':'layout-1p4','1p5':'layout-1p5','1p7':'layout-1p7','1p9':'layout-1p9','2p8':'layout-2p8'};
+const COUNTS={1:1,2:2,3:3,4:4,6:6,8:8,9:9,10:10,12:12,15:15,16:16,20:20,24:24,25:25,30:30,36:36,'1p4':5,'1p5':6,'1p7':8,'1p9':10,'2p8':10};
 
 function setLayout(l){
   S.layout=l;
