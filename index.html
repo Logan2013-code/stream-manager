@@ -3,208 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamManager Pro</title>
+<title>StreamManager Pro — Broadcast Control</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#06060f;--panel:#0c0c1a;--card:#11111e;--hover:#181828;
-  --border:#1a1a30;--border2:#252545;
-  --pgm:#ff2d55;--prv:#00ff88;--blue:#4f8ef7;--purple:#7c3aed;
-  --cyan:#00d4ff;--orange:#ff9500;--gold:#ffd60a;
-  --text:#e8e8f0;--dim:#5a5a7a;--dim2:#2a2a45;
-  --pgm-glow:rgba(255,45,85,.35);--prv-glow:rgba(0,255,136,.35);
-  --blue-glow:rgba(79,142,247,.35);
+  --bg:#0a0a0f;--panel:#111118;--card:#161620;--surface:#1a1a25;
+  --border:#222235;--border2:#2a2a40;
+  --pgm:#e81123;--prv:#0d9e2a;--blue:#2b7be0;--amber:#e89d0a;
+  --cyan:#0ad4e8;--purple:#7c3aed;--gold:#ffd60a;
+  --text:#d8d8e4;--dim:#555570;--dim2:#333348;
+  --pgm-glow:rgba(232,17,35,.4);--prv-glow:rgba(13,158,42,.35);
 }
 html,body{height:100%;width:100%;overflow:hidden}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;
-  display:flex;flex-direction:column;user-select:none;
-  background-image:radial-gradient(rgba(79,142,247,.015) 1px,transparent 1px);
-  background-size:28px 28px;
-}
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(ellipse at 15% 50%,rgba(79,142,247,.04) 0%,transparent 55%),
-    radial-gradient(ellipse at 85% 20%,rgba(124,58,237,.04) 0%,transparent 55%),
-    radial-gradient(ellipse at 50% 90%,rgba(255,45,85,.03) 0%,transparent 55%);
-}
-#hdr,#main,#helpbar{position:relative;z-index:1}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:12px;display:flex;flex-direction:column;user-select:none}
 
-/* ── HEADER ── */
+/* ═══════ HEADER ═══════ */
 #hdr{
-  display:flex;align-items:center;justify-content:space-between;
-  background:rgba(6,6,15,.9);border-bottom:1px solid var(--border2);
-  padding:0 16px;height:50px;flex-shrink:0;gap:12px;
-  backdrop-filter:blur(20px);
+  display:flex;align-items:center;background:#08080d;
+  border-bottom:1px solid #1a1a2a;padding:0 10px;height:40px;flex-shrink:0;gap:8px;
 }
-.logo{
-  font-size:16px;font-weight:900;letter-spacing:2px;color:var(--pgm);
-  white-space:nowrap;text-shadow:0 0 20px var(--pgm-glow);
-}
-.logo em{color:var(--text);font-style:normal;font-weight:400;letter-spacing:0}
-.hdr-pills{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;flex-wrap:wrap}
+.logo{font-size:13px;font-weight:800;letter-spacing:3px;color:var(--pgm);white-space:nowrap}
+.logo span{color:var(--text);font-weight:400;opacity:.5;letter-spacing:0;font-size:10px;margin-left:4px}
+.hdr-pills{display:flex;gap:4px;flex:1;justify-content:center;flex-wrap:wrap}
 .pill{
-  display:flex;align-items:center;gap:5px;padding:4px 11px;
-  border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;
-  background:rgba(255,255,255,.03);border:1px solid var(--border2);color:var(--dim);
-  transition:all .3s;white-space:nowrap;
+  display:flex;align-items:center;gap:4px;padding:3px 8px;
+  border-radius:3px;font-size:9px;font-weight:700;letter-spacing:1px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--dim);
 }
-.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--dim2);transition:all .3s}
-.pill.rec-on{color:var(--pgm);border-color:var(--pgm);background:rgba(255,45,85,.08);box-shadow:0 0 12px var(--pgm-glow)}
-.pill.rec-on .dot{background:var(--pgm);box-shadow:0 0 6px var(--pgm);animation:blink 1s infinite}
-.pill.live-on{color:var(--cyan);border-color:var(--cyan);background:rgba(0,212,255,.08);box-shadow:0 0 12px rgba(0,212,255,.3)}
-.pill.live-on .dot{background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:blink 1.2s infinite}
-.pill.obs-on{color:var(--prv);border-color:var(--prv);background:rgba(0,255,136,.06)}
-.pill.obs-on .dot{background:var(--prv);box-shadow:0 0 6px var(--prv)}
-.pill.mix-on{color:var(--orange);border-color:var(--orange);background:rgba(255,149,0,.08)}
-.pill.mix-on .dot{background:var(--orange);animation:blink .8s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
-@keyframes glow-pulse{0%,100%{box-shadow:0 0 8px var(--pgm-glow)}50%{box-shadow:0 0 20px var(--pgm-glow)}}
-#clock{
-  font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;
-  white-space:nowrap;color:var(--text);letter-spacing:1px;
-}
-#btn-fs{
-  background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--dim);
-  cursor:pointer;padding:5px 12px;border-radius:6px;font-size:11px;white-space:nowrap;
-  transition:all .2s;
-}
-#btn-fs:hover{color:var(--text);border-color:#444;background:rgba(255,255,255,.07)}
+.pill .dot{width:5px;height:5px;border-radius:50%;background:var(--dim2)}
+.pill.on{border-color:var(--pgm);color:var(--pgm)}.pill.on .dot{background:var(--pgm);box-shadow:0 0 4px var(--pgm);animation:blink 1s infinite}
+.pill.live{border-color:var(--cyan);color:var(--cyan)}.pill.live .dot{background:var(--cyan);animation:blink 1.2s infinite}
+.pill.obs-on{border-color:var(--prv);color:var(--prv)}.pill.obs-on .dot{background:var(--prv)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#clock{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;color:#888}
+#pgm-clock{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--pgm);letter-spacing:1px}
 
-/* ── MAIN ── */
+/* ═══════ MAIN ═══════ */
 #main{display:flex;flex:1;overflow:hidden;min-height:0}
 
-/* ── PANELS ── */
+/* ═══════ LEFT PANEL ═══════ */
 #lpanel{
-  width:220px;flex-shrink:0;background:rgba(12,12,26,.8);
+  width:210px;flex-shrink:0;background:var(--panel);
   border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;
-  backdrop-filter:blur(12px);
 }
-#rpanel{
-  width:268px;flex-shrink:0;background:rgba(12,12,26,.8);
-  border-left:1px solid var(--border);display:flex;flex-direction:column;
-  overflow-y:auto;overflow-x:hidden;backdrop-filter:blur(12px);
-}
-#rpanel::-webkit-scrollbar{width:3px}
-#rpanel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-#center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:#030308}
-.psec{border-bottom:1px solid var(--border);padding:11px;flex-shrink:0}
-.ptitle{
-  font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:var(--dim);margin-bottom:9px;display:flex;align-items:center;gap:6px;
-}
-.ptitle::after{content:'';flex:1;height:1px;background:var(--border)}
-.pscroll{flex:1;overflow-y:auto;padding:6px}
-.pscroll::-webkit-scrollbar{width:3px}
-.pscroll::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:2px}
-
-/* ── TABS ── */
 .tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tab{
-  flex:1;padding:9px 4px;font-size:10px;font-weight:700;letter-spacing:.8px;
+  flex:1;padding:7px 4px;font-size:9px;font-weight:700;letter-spacing:.8px;
   text-transform:uppercase;text-align:center;cursor:pointer;color:var(--dim);
-  border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;
+  border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;
 }
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab:hover{color:var(--text)}.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .tab-content{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
 .tab-content.active{display:flex}
+.psec{border-bottom:1px solid var(--border);padding:8px;flex-shrink:0}
+.ptitle{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.pscroll{flex:1;overflow-y:auto;padding:4px}.pscroll::-webkit-scrollbar{width:2px}.pscroll::-webkit-scrollbar-thumb{background:var(--dim2)}
 
-/* ── BUTTONS ── */
-.btn{
-  border:none;border-radius:7px;cursor:pointer;font-weight:600;
-  font-size:12px;padding:8px 14px;display:inline-flex;align-items:center;
-  justify-content:center;gap:5px;transition:all .2s;position:relative;overflow:hidden;
-}
-.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .15s}
-.btn:hover::after{background:rgba(255,255,255,.06)}
+/* ═══════ BUTTONS ═══════ */
+.btn{border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:11px;padding:6px 10px;transition:all .15s}
 .btn:active{transform:scale(.97)}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{filter:brightness(1.2)}
+.btn-o{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text)}.btn-o:hover{background:rgba(255,255,255,.08)}
 .btn-block{width:100%}
-.btn-p{background:linear-gradient(135deg,#3a7bd5,#5b8dee);color:#fff;box-shadow:0 2px 12px rgba(79,142,247,.25)}
-.btn-p:hover{box-shadow:0 4px 20px rgba(79,142,247,.4)}
-.btn-d{background:linear-gradient(135deg,#c9263a,#ff2d55);color:#fff;box-shadow:0 2px 12px var(--pgm-glow)}
-.btn-s{background:linear-gradient(135deg,#00c96b,#00ff88);color:#000}
-.btn-o{background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--text)}
-.btn-o:hover{background:rgba(255,255,255,.08);border-color:#333}
 
-/* ── SOURCE ITEMS ── */
+/* ═══════ SOURCE LIST ═══════ */
 .src-item{
-  display:flex;align-items:center;gap:7px;padding:8px 9px;
-  border-radius:7px;cursor:pointer;border:1px solid transparent;
-  margin-bottom:3px;background:rgba(255,255,255,.03);transition:all .2s;
+  display:flex;align-items:center;gap:5px;padding:5px 6px;
+  border-radius:4px;cursor:pointer;border:1px solid transparent;
+  margin-bottom:2px;background:rgba(255,255,255,.02);font-size:11px;
 }
-.src-item:hover{background:rgba(255,255,255,.06);border-color:var(--border2)}
-.src-item.pgm{border-color:var(--pgm);background:rgba(255,45,85,.08);box-shadow:0 0 10px var(--pgm-glow)}
-.src-item.prv{border-color:var(--prv);background:rgba(0,255,136,.06);box-shadow:0 0 10px var(--prv-glow)}
-.src-tally{
-  width:8px;height:8px;border-radius:50%;background:var(--dim2);
-  flex-shrink:0;transition:all .3s;
-}
-.src-item.pgm .src-tally{background:var(--pgm);box-shadow:0 0 6px var(--pgm)}
-.src-item.prv .src-tally{background:var(--prv);box-shadow:0 0 6px var(--prv)}
-.src-name{flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.src-badge{
-  font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(255,255,255,.05);
-  color:var(--dim);text-transform:uppercase;flex-shrink:0;border:1px solid var(--border2);
-  letter-spacing:.5px;
-}
-.src-badge.twitch{background:rgba(145,70,255,.15);color:#b57cff;border-color:rgba(145,70,255,.3)}
-.src-badge.youtube{background:rgba(255,0,0,.1);color:#ff6060;border-color:rgba(255,0,0,.2)}
-.src-badge.obs{background:rgba(79,142,247,.1);color:#80b0ff;border-color:rgba(79,142,247,.2)}
-.btn-rm{
-  background:none;border:none;color:var(--dim2);cursor:pointer;
-  padding:2px 5px;border-radius:3px;font-size:13px;line-height:1;transition:all .2s;
-}
-.btn-rm:hover{color:var(--pgm);background:rgba(255,45,85,.1)}
+.src-item:hover{background:rgba(255,255,255,.05)}
+.src-item.pgm{border-color:var(--pgm);background:rgba(232,17,35,.08)}
+.src-item.prv{border-color:var(--prv);background:rgba(13,158,42,.06)}
+.src-tally{width:6px;height:6px;border-radius:50%;background:var(--dim2);flex-shrink:0}
+.src-item.pgm .src-tally{background:var(--pgm);box-shadow:0 0 4px var(--pgm)}
+.src-item.prv .src-tally{background:var(--prv);box-shadow:0 0 4px var(--prv)}
+.src-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src-badge{font-size:7px;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.06);color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.btn-rm{background:none;border:none;color:var(--dim2);cursor:pointer;padding:2px 4px;font-size:12px}.btn-rm:hover{color:var(--pgm)}
 
-/* ── OBS SOURCE THUMBS ── */
-.obs-src-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px}
-.obs-thumb{
-  border-radius:6px;overflow:hidden;cursor:pointer;border:1px solid var(--border);
-  background:#000;position:relative;aspect-ratio:16/9;transition:all .2s;
-}
-.obs-thumb:hover{border-color:var(--blue);box-shadow:0 0 10px var(--blue-glow)}
-.obs-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.obs-thumb .tname{
-  position:absolute;bottom:0;left:0;right:0;
-  background:linear-gradient(transparent,rgba(0,0,0,.85));
-  padding:10px 5px 4px;font-size:9px;font-weight:700;
-  text-overflow:ellipsis;overflow:hidden;white-space:nowrap;
-}
-.obs-thumb .ttype{
-  position:absolute;top:3px;right:3px;font-size:8px;
-  background:rgba(0,0,0,.7);padding:1px 4px;border-radius:3px;color:#88f;
-}
-.obs-thumb .tuse{
-  position:absolute;inset:0;background:rgba(79,142,247,.0);
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:all .2s;font-size:10px;font-weight:700;color:#fff;
-}
-.obs-thumb:hover .tuse{opacity:1;background:rgba(79,142,247,.4)}
-.obs-empty{color:var(--dim);font-size:11px;text-align:center;padding:16px}
-
-/* ── LAYOUT PICKER ── */
-.lp{display:flex;gap:4px;flex-wrap:wrap}
+/* ═══════ LAYOUT GRID ═══════ */
+.lp{display:flex;gap:2px;flex-wrap:wrap}
 .lpbtn{
-  padding:5px 9px;border-radius:5px;border:1px solid var(--border2);
-  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:11px;font-weight:700;
-  transition:all .2s;
+  padding:3px 6px;border-radius:3px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;
 }
-.lpbtn:hover,.lpbtn.active{
-  background:rgba(79,142,247,.15);border-color:var(--blue);color:var(--blue);
-}
+.lpbtn:hover,.lpbtn.active{background:rgba(43,123,224,.15);border-color:var(--blue);color:var(--blue)}
 
-/* ── MULTIVIEW ── */
-#mv{
-  flex:1;display:grid;gap:2px;padding:2px;
-  background:#020205;overflow:hidden;min-height:0;
+/* ═══════ OBS THUMBS ═══════ */
+.obs-src-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px}
+.obs-thumb{
+  border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid var(--border);
+  background:#000;position:relative;aspect-ratio:16/9;
 }
-.layout-1{grid-template-columns:1fr;grid-template-rows:1fr}
-.layout-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
-.layout-3{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr}
+.obs-thumb:hover{border-color:var(--blue)}
+.obs-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.obs-thumb .tname{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.9));padding:8px 4px 3px;font-size:8px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obs-thumb .ttype{position:absolute;top:2px;right:2px;font-size:7px;background:rgba(0,0,0,.7);padding:1px 3px;border-radius:2px;color:#88f}
+.obs-thumb .tuse{position:absolute;inset:0;background:rgba(43,123,224,0);display:flex;align-items:center;justify-content:center;opacity:0;font-size:9px;font-weight:700;color:#fff}
+.obs-thumb:hover .tuse{opacity:1;background:rgba(43,123,224,.4)}
+
+/* ═══════ CENTER ═══════ */
+#center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:#050508}
+
+/* ═══════ MULTIVIEW ═══════ */
+#mv{flex:1;display:grid;gap:1px;padding:1px;background:#020204;overflow:hidden;min-height:0}
+.layout-1{grid-template-columns:1fr}
+.layout-2{grid-template-columns:1fr 1fr}
+.layout-3{grid-template-columns:repeat(3,1fr)}
 .layout-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .layout-6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
 .layout-8{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr}
@@ -214,427 +121,329 @@ body::before{
 .layout-15{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr)}
 .layout-16{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr)}
 .layout-20{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr)}
-.layout-24{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,1fr)}
 .layout-25{grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)}
-.layout-30{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,1fr)}
 .layout-36{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr)}
-.layout-1p4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(4,1fr)}
-.layout-1p4 .mvcell:first-child{grid-row:1/5}
-.layout-1p5{grid-template-columns:3fr 1fr;grid-template-rows:repeat(5,1fr)}
-.layout-1p5 .mvcell:first-child{grid-row:1/6}
-.layout-1p7{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}
-.layout-1p7 .mvcell:first-child{grid-row:1/5;grid-column:1/2}
-.layout-1p9{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(5,1fr)}
-.layout-1p9 .mvcell:first-child{grid-row:1/6;grid-column:1/2}
-.layout-2p8{grid-template-columns:1fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}
-.layout-2p8 .mvcell:nth-child(1){grid-row:1/3;grid-column:1/2}
-.layout-2p8 .mvcell:nth-child(2){grid-row:1/3;grid-column:2/3}
+.layout-1p4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(4,1fr)}.layout-1p4 .mvcell:first-child{grid-row:1/5}
+.layout-1p5{grid-template-columns:3fr 1fr;grid-template-rows:repeat(5,1fr)}.layout-1p5 .mvcell:first-child{grid-row:1/6}
+.layout-1p7{grid-template-columns:3fr 1fr 1fr;grid-template-rows:repeat(4,1fr)}.layout-1p7 .mvcell:first-child{grid-row:1/5;grid-column:1/2}
 
+/* ═══════ MV CELL — broadcast style ═══════ */
 .mvcell{
-  position:relative;background:#080810;cursor:pointer;
-  border:1px solid #111120;border-radius:4px;overflow:hidden;
-  transition:border-color .15s,box-shadow .15s;
+  position:relative;background:#0a0a0f;cursor:pointer;
+  border:2px solid #181825;overflow:hidden;
 }
-.mvcell:hover{border-color:#2a2a50}
-.mvcell.pgm{
-  border-color:var(--pgm);
-  box-shadow:0 0 0 1px var(--pgm),inset 0 0 40px rgba(255,45,85,.05);
-  animation:glow-pulse 2s infinite;
-}
-.mvcell.prv{
-  border-color:var(--prv);
-  box-shadow:0 0 0 1px var(--prv),inset 0 0 40px rgba(0,255,136,.04);
-}
-.mvcell video,.mvcell iframe{
-  width:100%;height:100%;object-fit:contain;display:block;background:#000;border:none;
-}
+.mvcell:hover{border-color:#2a2a45}
+.mvcell.pgm{border-color:var(--pgm);box-shadow:inset 0 0 30px rgba(232,17,35,.06)}
+.mvcell.prv{border-color:var(--prv);box-shadow:inset 0 0 30px rgba(13,158,42,.05)}
+.mvcell video,.mvcell iframe{width:100%;height:100%;object-fit:contain;display:block;background:#000;border:none}
 .mvcell img.obssnap{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-.tbar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:0}
-.mvcell.pgm .tbar{background:linear-gradient(90deg,var(--pgm),#ff6b85)}
-.mvcell.prv .tbar{background:linear-gradient(90deg,var(--prv),#80ffbb)}
-.vlabel{
-  position:absolute;bottom:0;left:0;right:0;
-  padding:20px 8px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;
-  background:linear-gradient(transparent,rgba(0,0,0,.9));
-  text-shadow:0 1px 4px #000;pointer-events:none;
-}
-.mvcell.pgm .vlabel{color:var(--pgm)}
-.mvcell.prv .vlabel{color:var(--prv)}
-.nosig{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;color:#1e1e35;gap:5px;pointer-events:none;
-}
-.nosig .icon{font-size:26px;opacity:.5}
-.nosig .txt{font-size:9px;letter-spacing:1px;text-transform:uppercase}
-.mvcell.has-src .nosig{display:none}
-.idx-badge{
-  position:absolute;top:5px;right:6px;font-size:9px;font-weight:700;
-  color:#333;background:rgba(0,0,0,.6);padding:1px 5px;border-radius:3px;pointer-events:none;
-}
-.embed-badge{
-  position:absolute;top:5px;left:6px;font-size:8px;font-weight:700;
-  padding:2px 6px;border-radius:3px;pointer-events:none;z-index:2;
-}
-.embed-badge.twitch{background:#9146ff;color:#fff}
-.embed-badge.youtube{background:#ff0000;color:#fff}
-.obs-snap-badge{
-  position:absolute;top:5px;left:6px;font-size:8px;font-weight:700;
-  background:rgba(79,142,247,.8);color:#fff;padding:2px 6px;border-radius:3px;pointer-events:none;
-}
-.nomix-warn{
-  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.75);color:var(--orange);font-size:9px;font-weight:700;
-  padding:3px 7px;border-radius:4px;letter-spacing:.5px;pointer-events:none;
-  border:1px solid rgba(255,149,0,.3);z-index:3;display:none;white-space:nowrap;
-}
 
-/* ── PGM/PRV MONITORS ── */
-#pgmprv{
-  display:grid;grid-template-columns:1fr 1fr;gap:2px;
-  height:190px;background:#020205;padding:2px;flex-shrink:0;
-  border-top:1px solid #111120;
+/* ── UMD (Under Monitor Display) — broadcast standard ── */
+.umd{
+  position:absolute;bottom:0;left:0;right:0;height:22px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 6px;background:rgba(0,0,0,.85);z-index:5;
 }
-.mon{position:relative;background:#000;overflow:hidden;border-radius:4px}
+.umd-name{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.mvcell.pgm .umd{background:var(--pgm)}.mvcell.pgm .umd-name{color:#fff}
+.mvcell.prv .umd{background:var(--prv)}.mvcell.prv .umd-name{color:#fff}
+.umd-idx{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);margin-right:5px}
+.mvcell.pgm .umd-idx,.mvcell.prv .umd-idx{color:rgba(255,255,255,.8)}
+
+/* ── Per-cell audio meter ── */
+.cell-vu{
+  position:absolute;top:0;right:0;bottom:22px;width:6px;z-index:4;
+  display:flex;flex-direction:column-reverse;background:rgba(0,0,0,.5);
+}
+.cell-vu-bar{width:100%;background:linear-gradient(to top,var(--prv) 0%,var(--prv) 60%,var(--amber) 80%,var(--pgm) 100%);border-radius:0;transition:height .08s linear}
+
+/* ── Tally light ── */
+.tally{
+  position:absolute;top:0;left:0;right:0;height:3px;z-index:5;
+}
+.mvcell.pgm .tally{background:var(--pgm)}
+.mvcell.prv .tally{background:var(--prv)}
+.nosig{position:absolute;inset:0;bottom:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#1a1a28;gap:3px;pointer-events:none}
+.nosig .icon{font-size:20px;opacity:.4}.nosig .txt{font-size:8px;letter-spacing:1px;text-transform:uppercase}
+.mvcell.has-src .nosig{display:none}
+
+.embed-badge{position:absolute;top:6px;left:6px;font-size:7px;font-weight:700;padding:2px 5px;border-radius:2px;z-index:4}
+.embed-badge.twitch{background:#9146ff;color:#fff}.embed-badge.youtube{background:#f00;color:#fff}
+.obs-snap-badge{position:absolute;top:6px;left:6px;font-size:7px;font-weight:700;background:rgba(43,123,224,.85);color:#fff;padding:2px 5px;border-radius:2px;z-index:4}
+
+/* ═══════ PGM / PRV MONITORS ═══════ */
+#pgmprv{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  height:180px;background:#020204;padding:1px;flex-shrink:0;
+  border-top:2px solid #181825;
+}
+.mon{position:relative;background:#000;overflow:hidden}
 .mon video,.mon iframe{width:100%;height:100%;object-fit:contain;border:none}
 .monlbl{
-  position:absolute;top:6px;left:8px;font-size:9px;font-weight:800;
-  letter-spacing:2px;text-transform:uppercase;padding:2px 9px;border-radius:4px;z-index:2;
+  position:absolute;top:0;left:0;right:0;height:24px;z-index:5;
+  display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
 }
-#pgm-mon .monlbl{background:var(--pgm);color:#fff;box-shadow:0 0 12px var(--pgm-glow)}
-#prv-mon .monlbl{background:var(--prv);color:#000}
-.monnosig{
-  position:absolute;inset:0;display:flex;align-items:center;
-  justify-content:center;color:#1a1a2a;font-size:10px;letter-spacing:2px;text-transform:uppercase;
-}
+#pgm-mon .monlbl{background:var(--pgm);color:#fff}
+#prv-mon .monlbl{background:var(--prv);color:#fff}
+.monnosig{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#1a1a28;font-size:9px;letter-spacing:2px;text-transform:uppercase}
 
-/* ── CUT / AUTO ── */
-.btn-cut{
-  background:linear-gradient(135deg,#c9263a,#ff2d55);color:#fff;
-  font-size:17px;font-weight:900;letter-spacing:4px;padding:14px;
-  border-radius:8px;border:none;cursor:pointer;width:100%;
-  transition:all .15s;box-shadow:0 4px 20px var(--pgm-glow);
+/* ═══════ TRANSITION AREA (broadcast bus) ═══════ */
+#trans-bar{
+  display:flex;align-items:stretch;gap:1px;
+  background:#08080d;border-top:1px solid var(--border);
+  padding:0;flex-shrink:0;height:56px;
 }
-.btn-cut:hover{box-shadow:0 6px 30px var(--pgm-glow);transform:translateY(-1px)}
-.btn-cut:active,.btn-cut.flash{transform:scale(.95);filter:brightness(1.5)}
-.btn-auto{
-  background:linear-gradient(135deg,#3a5bd5,#4f8ef7);color:#fff;
-  font-size:17px;font-weight:900;letter-spacing:4px;padding:14px;
-  border-radius:8px;border:none;cursor:pointer;width:100%;
-  transition:all .15s;box-shadow:0 4px 20px var(--blue-glow);
+.trans-sec{display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--panel)}
+.trans-sec:first-child{flex:1}
+.trans-btn{
+  padding:8px 16px;border:2px solid var(--border);border-radius:4px;
+  background:var(--card);color:var(--text);cursor:pointer;font-weight:800;
+  font-size:14px;letter-spacing:2px;transition:all .1s;
 }
-.btn-auto:hover{box-shadow:0 6px 30px var(--blue-glow);transform:translateY(-1px)}
-.btn-auto:active{transform:scale(.96)}
+.trans-btn:hover{border-color:#444;background:#222}
+.trans-btn:active,.trans-btn.flash{transform:scale(.95)}
+.trans-btn.cut-btn{border-color:rgba(232,17,35,.3);color:var(--pgm)}
+.trans-btn.cut-btn:hover{border-color:var(--pgm);background:rgba(232,17,35,.1)}
+.trans-btn.auto-btn{border-color:rgba(43,123,224,.3);color:var(--blue)}
+.trans-btn.auto-btn:hover{border-color:var(--blue);background:rgba(43,123,224,.1)}
+.trans-btn.ftb-btn{border-color:rgba(255,214,10,.2);color:var(--amber)}
+.trans-btn.ftb-btn:hover{border-color:var(--amber);background:rgba(232,157,10,.1)}
+.trans-btn.ftb-btn.active{background:var(--amber);color:#000;border-color:var(--amber)}
 
-/* ── OBS SCENES ── */
-.sclist{display:flex;flex-direction:column;gap:3px;max-height:170px;overflow-y:auto}
-.sclist::-webkit-scrollbar{width:3px}
-.sclist::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:2px}
-.scitem{
-  padding:7px 10px;border-radius:6px;background:rgba(255,255,255,.03);
-  cursor:pointer;font-size:12px;border:1px solid transparent;transition:all .15s;
-  display:flex;align-items:center;gap:8px;
-}
-.scitem:hover{background:rgba(255,255,255,.06);border-color:var(--border2)}
-.scitem.active{border-color:var(--pgm);color:var(--pgm);background:rgba(255,45,85,.08);font-weight:700}
-.scitem.trans-active{border-color:var(--blue);color:#90b8ff;font-weight:700}
-.scitem-thumb{
-  width:48px;height:27px;object-fit:cover;border-radius:3px;
-  background:#000;flex-shrink:0;border:1px solid var(--border);
-}
+/* T-bar */
+.tbar-wrap{display:flex;align-items:center;gap:4px;padding:0 6px}
+.tbar-label{font-size:7px;font-weight:700;letter-spacing:1px;color:var(--dim);text-transform:uppercase;writing-mode:vertical-lr;transform:rotate(180deg)}
+.tbar-track{width:6px;height:40px;background:var(--border);border-radius:3px;position:relative;cursor:pointer}
+.tbar-thumb{width:14px;height:10px;background:var(--amber);border-radius:2px;position:absolute;left:-4px;top:0;cursor:grab;transition:top .05s}
 
-/* ── INPUTS ── */
-.inp{
-  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);
-  color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;
-  margin-bottom:5px;font-family:inherit;transition:border-color .2s;
+/* Transition type selector */
+.ttype-row{display:flex;gap:2px}
+.ttbtn{
+  padding:4px 8px;border-radius:3px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.5px;
 }
-.inp:focus{outline:none;border-color:var(--blue);background:rgba(79,142,247,.05)}
-.inp::placeholder{color:var(--dim2)}
-.inp-sm{font-size:11px;padding:5px 8px}
-.inp-row{display:flex;gap:5px;margin-bottom:5px}
-.inp-row .inp{margin-bottom:0}
+.ttbtn:hover,.ttbtn.active{background:rgba(43,123,224,.12);border-color:var(--blue);color:var(--blue)}
 
-/* ── TRANSITION BUTTONS ── */
-.trbs{display:flex;gap:3px}
-.trb{
-  flex:1;padding:6px 4px;border-radius:5px;border:1px solid var(--border);
-  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:10px;
-  font-weight:700;text-align:center;transition:all .2s;letter-spacing:.5px;
-}
-.trb:hover,.trb.active{background:rgba(79,142,247,.15);border-color:var(--blue);color:var(--blue)}
+/* Duration */
+.dur-row{display:flex;align-items:center;gap:4px}
+.dur-row input[type=range]{width:60px;accent-color:var(--blue);height:3px}
+.dur-lbl{font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums;min-width:35px}
 
-/* ── RECORD/STREAM BUTTONS ── */
-.btn-rec{
-  width:100%;padding:10px;border-radius:7px;border:none;font-size:12px;font-weight:700;
-  cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
-  background:linear-gradient(135deg,#7a1520,#9b1c2a);color:#ff8899;
-  border:1px solid rgba(255,45,85,.2);transition:all .2s;
+/* ═══════ RIGHT PANEL ═══════ */
+#rpanel{
+  width:250px;flex-shrink:0;background:var(--panel);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;
 }
-.btn-rec:hover{background:linear-gradient(135deg,#9b1c2a,#c9263a);color:#fff}
-.btn-rec.on{background:linear-gradient(135deg,#c9263a,var(--pgm));color:#fff;animation:glow-pulse 1.5s infinite;box-shadow:0 0 20px var(--pgm-glow)}
-.btn-stream{
-  width:100%;padding:10px;border-radius:7px;border:none;font-size:12px;font-weight:700;
-  cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
-  background:linear-gradient(135deg,#1a1a5f,#22227a);color:#8899ff;
-  border:1px solid rgba(79,142,247,.2);transition:all .2s;
-}
-.btn-stream:hover{background:linear-gradient(135deg,#22227a,#3a3aaa);color:#fff}
-.btn-stream.on{background:linear-gradient(135deg,#4422aa,#7c3aed);color:#fff;box-shadow:0 0 20px rgba(124,58,237,.4)}
-.timer-big{
-  font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;
-  text-align:center;padding:8px;background:rgba(0,0,0,.3);border-radius:6px;
-  letter-spacing:3px;border:1px solid var(--border);
-}
+#rpanel::-webkit-scrollbar{width:2px}#rpanel::-webkit-scrollbar-thumb{background:var(--dim2)}
 
-/* ── VU METERS ── */
-.vu-wrap{margin-bottom:8px}
-.vu-name{font-size:10px;color:var(--dim);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vu-track{
-  height:6px;background:rgba(255,255,255,.06);border-radius:3px;
-  position:relative;overflow:hidden;
-}
-.vu-bar{
-  height:100%;width:0%;border-radius:3px;transition:width .05s linear;
-  background:linear-gradient(90deg,var(--prv) 60%,var(--orange) 80%,var(--pgm) 100%);
-}
-.vu-peak{
-  position:absolute;top:0;left:0;width:2px;height:100%;
-  background:#fff;border-radius:1px;transition:left .1s;
-}
-
-/* ── STATS BAR ── */
-.stats-row{display:flex;gap:6px;flex-wrap:wrap}
-.stat-chip{
-  padding:4px 8px;border-radius:5px;background:rgba(255,255,255,.04);
-  border:1px solid var(--border);font-size:10px;color:var(--dim);
-  display:flex;flex-direction:column;gap:1px;flex:1;min-width:50px;
-}
-.stat-chip .sv{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
-.stat-chip .sl{font-size:8px;letter-spacing:.5px;text-transform:uppercase}
-
-/* ── MIXER SECTION ── */
-.mix-preview{
-  width:100%;aspect-ratio:16/9;background:#000;border-radius:6px;
-  border:1px solid var(--border2);overflow:hidden;margin-bottom:8px;
-  box-shadow:0 0 20px rgba(0,0,0,.5);
-}
-.mix-preview canvas{width:100%;height:100%;display:block}
-.mmbtns,.mqbtns{display:flex;gap:3px;margin-bottom:7px}
-.mmbtn,.mqbtn{
-  flex:1;padding:5px;border-radius:5px;border:1px solid var(--border2);
-  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:10px;
-  font-weight:700;transition:all .2s;text-align:center;
-}
-.mmbtn:hover,.mmbtn.active{background:rgba(124,58,237,.2);border-color:var(--purple);color:#b07aff}
-.mqbtn:hover,.mqbtn.active{background:rgba(255,149,0,.15);border-color:var(--orange);color:var(--orange)}
-.btn-mixrec{
-  width:100%;padding:9px;border-radius:7px;border:1px solid rgba(0,255,136,.2);
-  font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.8px;margin-bottom:5px;
-  background:rgba(0,255,136,.06);color:var(--prv);transition:all .2s;
-}
-.btn-mixrec:hover{background:rgba(0,255,136,.12)}
-.btn-mixrec.on{background:var(--prv);color:#000;animation:blink 1.5s infinite}
-
-/* ── TIMER WIDGET ── */
-.timer-widget{
-  background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;
-  padding:10px;text-align:center;
-}
-.timer-val{
-  font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;
-  letter-spacing:3px;color:var(--gold);text-shadow:0 0 15px rgba(255,214,10,.3);
-}
-.timer-btns{display:flex;gap:5px;margin-top:7px}
-.timer-btn{
-  flex:1;padding:6px;border-radius:5px;border:1px solid var(--border2);
-  background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;
-  font-size:11px;font-weight:700;transition:all .2s;
-}
-.timer-btn:hover{background:rgba(255,255,255,.08)}
-.timer-btn.danger{color:var(--pgm);border-color:rgba(255,45,85,.3)}
-.timer-btn.danger:hover{background:rgba(255,45,85,.1)}
-
-/* ── CONN STATUS ── */
-.cst{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:8px;color:var(--dim)}
-.cdot{width:7px;height:7px;border-radius:50%;background:var(--dim2);flex-shrink:0;transition:all .3s}
-.cst.on{color:var(--prv)}.cst.on .cdot{background:var(--prv);box-shadow:0 0 5px var(--prv)}
+/* ═══════ OBS CONNECTION ═══════ */
+.cst{display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:6px;color:var(--dim)}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--dim2);flex-shrink:0}
+.cst.on{color:var(--prv)}.cst.on .cdot{background:var(--prv);box-shadow:0 0 4px var(--prv)}
 .cst.err{color:var(--pgm)}.cst.err .cdot{background:var(--pgm)}
-
-/* ── SLIDER ── */
-.slider-row{display:flex;align-items:center;gap:7px;margin-top:6px}
-input[type=range]{flex:1;accent-color:var(--blue);cursor:pointer;height:4px}
-.sdur{font-size:11px;color:var(--dim);min-width:40px}
-.volrow{display:flex;align-items:center;gap:5px;margin-top:3px}
-.vollbl{font-size:10px;color:var(--dim);width:22px;flex-shrink:0}
-input.vol{flex:1;accent-color:var(--prv)}
-
-/* ── WARN BANNER ── */
-.warn-banner{
-  background:rgba(255,149,0,.06);border:1px solid rgba(255,149,0,.2);
-  border-radius:6px;padding:8px 10px;font-size:10px;color:#ffc060;
-  line-height:1.6;margin-bottom:7px;
+.inp{
+  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);
+  color:var(--text);padding:5px 8px;border-radius:3px;font-size:11px;
+  margin-bottom:4px;font-family:inherit;
 }
-.warn-banner strong{display:block;margin-bottom:2px;font-size:11px;color:var(--orange)}
+.inp:focus{outline:none;border-color:var(--blue)}
+.inp-row{display:flex;gap:4px;margin-bottom:4px}.inp-row .inp{margin:0}
 
-/* ── HINT BOX ── */
-.hint-box{
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
-  border-radius:6px;padding:10px;font-size:11px;color:var(--dim);
-  line-height:1.6;margin-top:6px;
+/* ═══════ SCENES ═══════ */
+.sclist{display:flex;flex-direction:column;gap:2px;max-height:160px;overflow-y:auto}
+.sclist::-webkit-scrollbar{width:2px}.sclist::-webkit-scrollbar-thumb{background:var(--dim2)}
+.scitem{
+  padding:5px 8px;border-radius:3px;background:rgba(255,255,255,.03);
+  cursor:pointer;font-size:11px;border:1px solid transparent;
+  display:flex;align-items:center;gap:6px;
 }
-.hint-box strong{color:var(--text)}
-.hint-box code{
-  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
-  border-radius:3px;padding:1px 5px;font-family:monospace;
-  color:#90b8ff;font-size:10px;
-}
+.scitem:hover{background:rgba(255,255,255,.06)}
+.scitem.active{border-color:var(--pgm);color:var(--pgm);background:rgba(232,17,35,.06);font-weight:700}
+.scitem-thumb{width:42px;height:24px;object-fit:cover;border-radius:2px;background:#000;flex-shrink:0;border:1px solid var(--border)}
 
-/* ── MODAL ── */
-.overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.88);
-  display:flex;align-items:center;justify-content:center;
-  z-index:1000;backdrop-filter:blur(8px);
+/* ═══════ REC / STREAM BUTTONS ═══════ */
+.btn-rec,.btn-stream{
+  width:100%;padding:8px;border-radius:4px;border:1px solid var(--border);
+  font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;margin-bottom:4px;
+  background:rgba(255,255,255,.03);color:var(--dim);transition:all .15s;
 }
+.btn-rec:hover{background:rgba(232,17,35,.08);color:var(--pgm);border-color:rgba(232,17,35,.3)}
+.btn-stream:hover{background:rgba(43,123,224,.08);color:var(--blue);border-color:rgba(43,123,224,.3)}
+.btn-rec.on{background:var(--pgm);color:#fff;border-color:var(--pgm);animation:blink 1.5s infinite}
+.btn-stream.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.rec-timer{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;padding:4px;color:var(--dim);letter-spacing:2px}
+.rec-timer.on{color:var(--pgm)}
+
+/* ═══════ VU METERS ═══════ */
+.vu-wrap{margin-bottom:5px}
+.vu-name{font-size:9px;color:var(--dim);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vu-track{height:4px;background:rgba(255,255,255,.06);border-radius:2px;position:relative;overflow:hidden}
+.vu-bar{height:100%;width:0%;border-radius:2px;transition:width .05s linear;background:linear-gradient(90deg,var(--prv) 60%,var(--amber) 80%,var(--pgm) 100%)}
+.vu-peak{position:absolute;top:0;left:0;width:2px;height:100%;background:#fff;border-radius:1px;transition:left .1s}
+
+/* ═══════ STATS ═══════ */
+.stats-row{display:flex;gap:3px;flex-wrap:wrap}
+.stat-chip{
+  padding:3px 5px;border-radius:3px;background:rgba(255,255,255,.03);
+  border:1px solid var(--border);font-size:9px;color:var(--dim);flex:1;min-width:40px;text-align:center;
+}
+.stat-chip .sv{font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.stat-chip .sl{font-size:7px;letter-spacing:.5px;text-transform:uppercase}
+
+/* ═══════ AUDIO MIXER (vertical faders) ═══════ */
+.mixer-strip{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:4px 2px;background:rgba(0,0,0,.2);border-radius:3px;
+  border:1px solid var(--border);min-width:32px;flex:1;
+}
+.mixer-strip .ms-name{font-size:7px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center}
+.mixer-strip .ms-fader{
+  writing-mode:vertical-lr;direction:rtl;
+  -webkit-appearance:none;appearance:none;width:60px;
+  accent-color:var(--prv);cursor:pointer;
+}
+.mixer-strip .ms-db{font-size:8px;color:var(--dim);font-variant-numeric:tabular-nums}
+.mixer-strip .ms-vu{width:4px;height:60px;background:rgba(255,255,255,.06);border-radius:2px;position:relative;overflow:hidden}
+.mixer-strip .ms-vu-bar{position:absolute;bottom:0;width:100%;background:linear-gradient(to top,var(--prv) 60%,var(--amber) 80%,var(--pgm) 100%);border-radius:2px;transition:height .08s}
+
+/* ═══════ DSK/MACRO ═══════ */
+.macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.macro-btn{
+  padding:8px 4px;border-radius:3px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;
+  font-size:9px;font-weight:700;text-align:center;transition:all .15s;
+}
+.macro-btn:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.macro-btn.on{background:var(--pgm);color:#fff;border-color:var(--pgm)}
+.macro-btn.dsk-on{background:var(--amber);color:#000;border-color:var(--amber)}
+
+/* ═══════ TIMER ═══════ */
+.timer-widget{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:6px;text-align:center}
+.timer-val{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px;color:var(--gold)}
+.timer-btns{display:flex;gap:3px;margin-top:4px}
+.timer-btn{
+  flex:1;padding:4px;border-radius:3px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;font-size:9px;font-weight:700;
+}
+.timer-btn:hover{background:rgba(255,255,255,.07)}
+
+/* ═══════ SCENE LINK ═══════ */
+.link-row{display:flex;align-items:center;gap:3px;margin-bottom:4px}
+.link-row .link-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.link-row .link-name{flex:1;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-row select{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);padding:3px 4px;border-radius:3px;font-size:10px;font-family:inherit}
+
+/* ═══════ MIXER SECTION ═══════ */
+.mix-preview{width:100%;aspect-ratio:16/9;background:#000;border-radius:3px;border:1px solid var(--border);overflow:hidden;margin-bottom:4px}
+.mix-preview canvas{width:100%;height:100%;display:block}
+
+/* ═══════ MODAL ═══════ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:1000}
 .overlay.hidden{display:none}
-.modal{
-  background:rgba(12,12,26,.98);border:1px solid var(--border2);
-  border-radius:14px;padding:24px;width:480px;max-width:96vw;
-  max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.8);
-}
-.modal h2{font-size:17px;font-weight:700;margin-bottom:18px}
-.modal-row{margin-bottom:10px}
-.modal-row label{display:block;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
-.mac{display:flex;gap:7px;justify-content:flex-end;margin-top:18px}
-.typepicker{display:flex;gap:4px;flex-wrap:wrap}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:18px;width:460px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)}
+.modal h2{font-size:15px;font-weight:700;margin-bottom:14px}
+.modal-row{margin-bottom:8px}
+.modal-row label{display:block;font-size:8px;font-weight:700;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.mac{display:flex;gap:5px;justify-content:flex-end;margin-top:14px}
+.typepicker{display:flex;gap:3px;flex-wrap:wrap}
 .typebtn{
-  padding:6px 12px;border-radius:6px;border:1px solid var(--border2);
-  background:rgba(255,255,255,.04);color:var(--dim);cursor:pointer;
-  font-size:11px;font-weight:700;transition:all .2s;
+  padding:5px 10px;border-radius:4px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;
 }
-.typebtn:hover,.typebtn.active{background:rgba(79,142,247,.15);border-color:var(--blue);color:var(--blue)}
-.typebtn.twitch-btn.active{background:rgba(145,70,255,.15);border-color:#9146ff;color:#b07aff}
-.typebtn.yt-btn.active{background:rgba(255,0,0,.1);border-color:#ff4444;color:#ff8888}
+.typebtn:hover,.typebtn.active{background:rgba(43,123,224,.12);border-color:var(--blue);color:var(--blue)}
+.typebtn.twitch-btn.active{background:rgba(145,70,255,.12);border-color:#9146ff;color:#b07aff}
+.typebtn.yt-btn.active{background:rgba(255,0,0,.08);border-color:#f44;color:#f88}
+.hint-box{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:4px;padding:6px;font-size:10px;color:var(--dim);line-height:1.5;margin-top:4px}
+.hint-box strong{color:var(--text)}.hint-box code{background:rgba(43,123,224,.1);border:1px solid rgba(43,123,224,.2);border-radius:2px;padding:0 3px;color:#80b0ff;font-size:9px;font-family:monospace}
 
-/* ── CONTEXT MENU ── */
-.ctxmenu{
-  position:fixed;background:rgba(12,12,26,.97);border:1px solid var(--border2);
-  border-radius:10px;padding:5px;z-index:800;min-width:180px;
-  box-shadow:0 20px 50px rgba(0,0,0,.8);backdrop-filter:blur(12px);
-}
-.ctxitem{
-  padding:8px 12px;cursor:pointer;border-radius:6px;font-size:12px;
-  display:flex;align-items:center;gap:8px;color:var(--text);transition:background .15s;
-}
+/* ═══════ CONTEXT MENU ═══════ */
+.ctxmenu{position:fixed;background:var(--panel);border:1px solid var(--border2);border-radius:6px;padding:4px;z-index:800;min-width:170px;box-shadow:0 15px 40px rgba(0,0,0,.7)}
+.ctxitem{padding:6px 10px;cursor:pointer;border-radius:4px;font-size:11px;display:flex;align-items:center;gap:6px;color:var(--text)}
 .ctxitem:hover{background:rgba(255,255,255,.06)}
-.ctxitem.danger:hover{background:rgba(255,45,85,.1);color:var(--pgm)}
-.ctxsep{border-top:1px solid var(--border);margin:4px 0}
-.ctxtitle{font-size:9px;color:var(--dim);padding:4px 12px;letter-spacing:1px;text-transform:uppercase}
+.ctxitem.danger:hover{background:rgba(232,17,35,.08);color:var(--pgm)}
+.ctxsep{border-top:1px solid var(--border);margin:3px 0}
+.ctxtitle{font-size:8px;color:var(--dim);padding:3px 10px;letter-spacing:1px;text-transform:uppercase}
 
-/* ── TOAST ── */
-#toast{
-  position:fixed;bottom:40px;right:16px;background:rgba(12,12,26,.97);
-  padding:11px 16px;border-radius:9px;font-size:12px;z-index:9999;
-  display:none;border-left:3px solid var(--prv);
-  box-shadow:0 12px 40px rgba(0,0,0,.7);max-width:300px;line-height:1.4;
-  backdrop-filter:blur(12px);
-}
+/* ═══════ TOAST ═══════ */
+#toast{position:fixed;bottom:30px;right:12px;background:var(--panel);padding:8px 14px;border-radius:4px;font-size:11px;z-index:9999;display:none;border-left:3px solid var(--prv);box-shadow:0 8px 30px rgba(0,0,0,.6);max-width:280px;line-height:1.4}
 
-/* ── HELP BAR ── */
+/* ═══════ HELPBAR ═══════ */
 #helpbar{
-  background:rgba(6,6,15,.9);border-top:1px solid var(--border);
-  padding:4px 16px;font-size:10px;color:var(--dim2);
-  display:flex;gap:14px;flex-shrink:0;flex-wrap:wrap;
-  backdrop-filter:blur(12px);
+  background:#08080d;border-top:1px solid var(--border);
+  padding:3px 10px;font-size:9px;color:var(--dim2);
+  display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;
 }
-kbd{
-  background:rgba(255,255,255,.06);border:1px solid var(--border2);
-  border-radius:3px;padding:0 4px;font-size:9px;font-family:monospace;color:#666;
-}
-@media(min-width:2000px){
-  body{font-size:15px}#lpanel{width:260px}#rpanel{width:310px}
-  #pgmprv{height:240px}#hdr{height:58px}#clock{font-size:26px}
-}
+kbd{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:2px;padding:0 3px;font-size:8px;font-family:monospace;color:#555}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media(min-width:2000px){body{font-size:14px}#lpanel{width:250px}#rpanel{width:300px}#pgmprv{height:220px}#trans-bar{height:64px}}
+@media(max-width:1200px){#lpanel{width:180px}#rpanel{width:220px}}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ═══════ HEADER ═══════ -->
 <div id="hdr">
-  <div class="logo">STREAM<em>MGR</em> <span style="font-size:9px;color:var(--dim);font-weight:400;letter-spacing:0">PRO</span></div>
+  <div class="logo">STREAM<span>MGR PRO</span></div>
   <div class="hdr-pills">
-    <div class="pill" id="pill-rec"><div class="dot"></div>REC <span id="hdr-rec-t" style="opacity:.7"></span></div>
+    <div class="pill" id="pill-rec"><div class="dot"></div>REC <span id="hdr-rec-t"></span></div>
     <div class="pill" id="pill-live"><div class="dot"></div>LIVE</div>
     <div class="pill" id="pill-obs"><div class="dot"></div>OBS</div>
-    <div class="pill" id="pill-mix"><div class="dot"></div>MIXER</div>
-    <div class="pill" id="pill-fps" style="font-variant-numeric:tabular-nums"><div class="dot" style="background:var(--dim2)"></div><span id="fps-val">--</span> FPS</div>
-    <div class="pill" id="pill-cpu"><div class="dot" style="background:var(--dim2)"></div>CPU <span id="cpu-val">--%</span></div>
+    <div class="pill" id="pill-fps"><div class="dot"></div><span id="fps-val">--</span> FPS</div>
+    <div class="pill" id="pill-cpu"><div class="dot"></div>CPU <span id="cpu-val">--</span></div>
   </div>
+  <div id="pgm-clock">PGM 00:00:00</div>
   <div id="clock">00:00:00</div>
-  <button id="btn-fs" onclick="toggleFS()">⛶ Volledig</button>
+  <button class="btn btn-o" style="font-size:10px;padding:4px 8px" onclick="toggleFS()">⛶</button>
 </div>
 
-<!-- MAIN -->
+<!-- ═══════ MAIN ═══════ -->
 <div id="main">
 
   <!-- LEFT PANEL -->
   <div id="lpanel">
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('local')">📺 Bronnen</button>
-      <button class="tab" onclick="switchTab('obs')">🎬 OBS</button>
+      <button class="tab active" onclick="switchTab('local')">BRONNEN</button>
+      <button class="tab" onclick="switchTab('obs')">OBS</button>
     </div>
-
     <!-- LOCAL TAB -->
     <div class="tab-content active" id="tab-local">
       <div class="psec">
-        <button class="btn btn-p btn-block" onclick="openAddSrc()" style="margin-bottom:5px">＋ Bron toevoegen</button>
-        <button class="btn btn-o btn-block" style="font-size:11px" onclick="addDemoSources()">🎨 Demo bronnen</button>
+        <button class="btn btn-p btn-block" onclick="openAddSrc()" style="margin-bottom:3px;font-size:10px">＋ BRON TOEVOEGEN</button>
+        <button class="btn btn-o btn-block" style="font-size:10px" onclick="addDemoSources()">DEMO BRONNEN</button>
       </div>
       <div class="pscroll" id="srclist"></div>
       <div class="psec">
         <div class="ptitle">Layout</div>
         <div class="lp">
-          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Grid</div>
+          <div style="font-size:7px;color:var(--dim);letter-spacing:1px;width:100%;margin-bottom:2px">GRID</div>
           <button class="lpbtn" data-l="1" onclick="setLayout(1)">1</button>
           <button class="lpbtn" data-l="2" onclick="setLayout(2)">2</button>
-          <button class="lpbtn" data-l="3" onclick="setLayout(3)">3</button>
           <button class="lpbtn active" data-l="4" onclick="setLayout(4)">2×2</button>
           <button class="lpbtn" data-l="6" onclick="setLayout(6)">2×3</button>
           <button class="lpbtn" data-l="8" onclick="setLayout(8)">2×4</button>
           <button class="lpbtn" data-l="9" onclick="setLayout(9)">3×3</button>
-          <button class="lpbtn" data-l="10" onclick="setLayout(10)">2×5</button>
           <button class="lpbtn" data-l="12" onclick="setLayout(12)">3×4</button>
-          <button class="lpbtn" data-l="15" onclick="setLayout(15)">3×5</button>
           <button class="lpbtn" data-l="16" onclick="setLayout(16)">4×4</button>
           <button class="lpbtn" data-l="20" onclick="setLayout(20)">4×5</button>
-          <button class="lpbtn" data-l="24" onclick="setLayout(24)">4×6</button>
           <button class="lpbtn" data-l="25" onclick="setLayout(25)">5×5</button>
-          <button class="lpbtn" data-l="30" onclick="setLayout(30)">5×6</button>
           <button class="lpbtn" data-l="36" onclick="setLayout(36)">6×6</button>
-          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:5px 0 3px">Multiview</div>
+          <div style="font-size:7px;color:var(--dim);letter-spacing:1px;width:100%;margin:3px 0 2px">MULTIVIEW</div>
           <button class="lpbtn" data-l="1p4" onclick="setLayout('1p4')">1+4</button>
           <button class="lpbtn" data-l="1p5" onclick="setLayout('1p5')">1+5</button>
           <button class="lpbtn" data-l="1p7" onclick="setLayout('1p7')">1+7</button>
-          <button class="lpbtn" data-l="1p9" onclick="setLayout('1p9')">1+9</button>
-          <button class="lpbtn" data-l="2p8" onclick="setLayout('2p8')">2+8</button>
         </div>
       </div>
     </div>
-
     <!-- OBS TAB -->
     <div class="tab-content" id="tab-obs">
       <div class="psec">
         <div class="ptitle">OBS Bronnen</div>
-        <div style="font-size:10px;color:var(--dim);margin-bottom:8px">
-          Klik → cel toewijzen &nbsp;|&nbsp; Rechts-klik → toon/verberg in OBS<br>
-          Shift+klik → zichtbaarheid wisselen
-        </div>
-        <button class="btn btn-o btn-block" style="font-size:11px;margin-bottom:5px" onclick="refreshOBSSources()">↺ Bronnen verversen</button>
+        <div style="font-size:9px;color:var(--dim);margin-bottom:5px">Klik → toevoegen · Rechts-klik → toon/verberg</div>
+        <button class="btn btn-o btn-block" style="font-size:10px" onclick="refreshOBSSources()">↺ VERVERSEN</button>
       </div>
-      <div class="pscroll">
-        <div id="obs-src-grid" class="obs-src-grid">
-          <div class="obs-empty" style="grid-column:1/-1">Verbind met OBS om bronnen te laden</div>
-        </div>
-      </div>
+      <div class="pscroll"><div id="obs-src-grid" class="obs-src-grid"><div style="grid-column:1/-1;color:var(--dim2);font-size:10px;text-align:center;padding:12px">Verbind met OBS</div></div></div>
     </div>
   </div>
 
@@ -642,254 +451,180 @@ kbd{
   <div id="center">
     <div id="mv" class="layout-4"></div>
     <div id="pgmprv">
-      <div class="mon" id="pgm-mon">
-        <video id="pgm-vid" muted autoplay playsinline></video>
-        <div class="monlbl">PROGRAM</div>
-        <div class="monnosig" id="pgm-nosig">NO SIGNAL</div>
-      </div>
-      <div class="mon" id="prv-mon">
-        <video id="prv-vid" muted autoplay playsinline></video>
-        <div class="monlbl">PREVIEW</div>
-        <div class="monnosig" id="prv-nosig">NO SIGNAL</div>
-      </div>
+      <div class="mon" id="pgm-mon"><video id="pgm-vid" muted autoplay playsinline></video><div class="monlbl">PROGRAM</div><div class="monnosig" id="pgm-nosig">NO SIGNAL</div></div>
+      <div class="mon" id="prv-mon"><video id="prv-vid" muted autoplay playsinline></video><div class="monlbl">PREVIEW</div><div class="monnosig" id="prv-nosig">NO SIGNAL</div></div>
     </div>
   </div>
 
   <!-- RIGHT PANEL -->
   <div id="rpanel">
-
     <!-- OBS Connection -->
     <div class="psec">
       <div class="ptitle">OBS WebSocket</div>
       <div class="cst" id="cst-obs"><div class="cdot"></div><span id="cst-txt">Niet verbonden</span></div>
-      <input class="inp inp-sm" id="obs-host" value="localhost" placeholder="Host">
+      <input class="inp" id="obs-host" value="localhost" placeholder="Host" style="font-size:10px">
       <div class="inp-row">
-        <input class="inp inp-sm" type="number" id="obs-port" value="4455" placeholder="Port">
-        <input class="inp inp-sm" type="password" id="obs-pw" placeholder="Wachtwoord">
+        <input class="inp" type="number" id="obs-port" value="4455" placeholder="Port" style="font-size:10px">
+        <input class="inp" type="password" id="obs-pw" placeholder="Wachtwoord" style="font-size:10px">
       </div>
-      <button class="btn btn-p btn-block" id="obs-btn" onclick="obsToggle()">Verbinden met OBS</button>
+      <button class="btn btn-p btn-block" id="obs-btn" onclick="obsToggle()" style="font-size:10px">VERBINDEN</button>
     </div>
-
-    <!-- OBS Stats -->
+    <!-- Stats -->
     <div class="psec" id="stats-sec" style="display:none">
-      <div class="ptitle">Stream Status</div>
       <div class="stats-row">
         <div class="stat-chip"><div class="sv" id="stat-fps">--</div><div class="sl">FPS</div></div>
-        <div class="stat-chip"><div class="sv" id="stat-cpu">--%</div><div class="sl">CPU</div></div>
-        <div class="stat-chip"><div class="sv" id="stat-drop">--</div><div class="sl">Drops</div></div>
-        <div class="stat-chip"><div class="sv" id="stat-mem">--</div><div class="sl">RAM MB</div></div>
+        <div class="stat-chip"><div class="sv" id="stat-cpu">--</div><div class="sl">CPU</div></div>
+        <div class="stat-chip"><div class="sv" id="stat-drop">--</div><div class="sl">DROP</div></div>
+        <div class="stat-chip"><div class="sv" id="stat-mem">--</div><div class="sl">MB</div></div>
       </div>
     </div>
-
-    <!-- OBS Scenes -->
+    <!-- Scenes -->
     <div class="psec">
       <div class="ptitle">OBS Scènes</div>
-      <div class="sclist" id="sclist"><div style="color:var(--dim2);font-size:11px">Verbind met OBS</div></div>
+      <div class="sclist" id="sclist"><div style="color:var(--dim2);font-size:10px">Verbind OBS</div></div>
     </div>
-
-    <!-- Transition -->
-    <div class="psec">
-      <div class="ptitle">Overgang</div>
-      <div class="trbs">
-        <button class="trb active" data-t="Cut" onclick="selTrans(this)">CUT</button>
-        <button class="trb" data-t="Fade" onclick="selTrans(this)">FADE</button>
-        <button class="trb" data-t="Slide" onclick="selTrans(this)">SLIDE</button>
-        <button class="trb" data-t="Wipe" onclick="selTrans(this)">WIPE</button>
-      </div>
-      <div class="slider-row">
-        <span style="font-size:10px;color:var(--dim)">Duur</span>
-        <input type="range" min="100" max="3000" step="100" value="500" id="tdur" oninput="tdurChange(this.value)">
-        <span class="sdur" id="tdur-lbl">500ms</span>
-      </div>
-    </div>
-
-    <!-- Scene ↔ Source linking -->
+    <!-- Scene Links -->
     <div class="psec" id="scene-link-sec" style="display:none">
-      <div class="ptitle">Scène ↔ Bron koppeling</div>
-      <div style="font-size:10px;color:var(--dim);margin-bottom:7px">
-        Koppel bronnen aan OBS scènes — switching synchroniseert automatisch
-      </div>
-      <div id="scene-link-list" style="max-height:180px;overflow-y:auto"></div>
+      <div class="ptitle">Scène ↔ Bron</div>
+      <div id="scene-link-list"></div>
     </div>
-
-    <!-- OBS Transitions list -->
-    <div class="psec" id="obs-trans-sec" style="display:none">
-      <div class="ptitle">OBS Overgangen</div>
-      <div class="sclist" id="obs-trans-list"></div>
-    </div>
-
-    <!-- CUT / AUTO -->
-    <div class="psec">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button class="btn-cut" id="btn-cut" onclick="doCut()">CUT</button>
-        <button class="btn-auto" onclick="doAuto()">AUTO</button>
-      </div>
-    </div>
-
     <!-- Record / Stream -->
     <div class="psec">
-      <div class="ptitle">Opname &amp; Uitzending</div>
-      <button class="btn-rec" id="btn-rec" onclick="toggleRec()">⏺ OPNAME STARTEN</button>
-      <button class="btn-stream" id="btn-str" onclick="toggleStr()">📡 STREAM STARTEN</button>
-      <div class="timer-big" id="rec-timer">00:00:00</div>
+      <div class="ptitle">Opname &amp; Stream</div>
+      <button class="btn-rec" id="btn-rec" onclick="toggleRec()">⏺ OPNAME</button>
+      <button class="btn-stream" id="btn-str" onclick="toggleStr()">📡 STREAM</button>
+      <div class="rec-timer" id="rec-timer">00:00:00</div>
     </div>
-
     <!-- VU Meters -->
     <div class="psec" id="vu-sec">
-      <div class="ptitle">Audio Meters</div>
-      <div id="vu-list"><div style="color:var(--dim2);font-size:10px">Verbind met OBS voor audio meters</div></div>
+      <div class="ptitle">Audio</div>
+      <div id="vu-list"><div style="color:var(--dim2);font-size:9px">Verbind OBS voor meters</div></div>
     </div>
-
-    <!-- Browser Mixer -->
+    <!-- Macro Buttons -->
     <div class="psec">
-      <div class="ptitle" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap">
-        <span style="display:flex;align-items:center;gap:6px;flex:1">Browser Mixer</span>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:10px;color:var(--text);font-weight:600;text-transform:none;letter-spacing:0;white-space:nowrap;margin-bottom:0">
-          <input type="checkbox" id="mix-toggle" onchange="toggleMixer(this.checked)" style="accent-color:var(--orange)">
-          Aan
-        </label>
-      </div>
-      <div id="mix-body" style="display:none">
-        <div class="warn-banner">
-          <strong>⚠ Twitch/YouTube embeds zijn niet mixbaar</strong>
-          Alleen webcam, scherm, HLS en testbronnen worden gemengd.
-        </div>
-        <div class="mix-preview"><canvas id="mix-canvas"></canvas></div>
-        <div style="font-size:10px;color:var(--dim);margin-bottom:5px">Modus:</div>
-        <div class="mmbtns">
-          <button class="mmbtn active" data-m="pgm" onclick="setMixMode(this)">Programma</button>
-          <button class="mmbtn" data-m="multi" onclick="setMixMode(this)">Multiview</button>
-          <button class="mmbtn" data-m="pgm+prv" onclick="setMixMode(this)">PGM+PRV</button>
-        </div>
-        <div style="font-size:10px;color:var(--dim);margin-bottom:5px">Kwaliteit:</div>
-        <div class="mqbtns">
-          <button class="mqbtn" data-q="720" onclick="setMixQ(this)">720p</button>
-          <button class="mqbtn active" data-q="1080" onclick="setMixQ(this)">1080p</button>
-          <button class="mqbtn" data-q="2160" onclick="setMixQ(this)">4K</button>
-        </div>
-        <button class="btn-mixrec" id="btn-mixrec" onclick="toggleMixRec()">⏺ Browser opname starten</button>
-        <div style="font-size:10px;color:var(--dim);text-align:center" id="mix-rec-info">Slaat op als .webm bestand</div>
+      <div class="ptitle">Macro / DSK</div>
+      <div class="macro-grid">
+        <button class="macro-btn" id="dsk-btn" onclick="toggleDSK()">DSK</button>
+        <button class="macro-btn ftb-trigger" onclick="doFTB()">FTB</button>
+        <button class="macro-btn" onclick="addDemoSources()">DEMO</button>
+        <button class="macro-btn" onclick="toggleFS()">⛶ FS</button>
+        <button class="macro-btn" onclick="toggleRec()">REC</button>
+        <button class="macro-btn" onclick="toggleStr()">LIVE</button>
+        <button class="macro-btn" onclick="timerStartStop()">TIMER</button>
+        <button class="macro-btn" onclick="timerReset()">RESET</button>
       </div>
     </div>
-
-    <!-- Countdown Timer -->
+    <!-- Timer -->
     <div class="psec">
-      <div class="ptitle">Countdown / Stopwatch</div>
+      <div class="ptitle">Timer</div>
       <div class="timer-widget">
         <div class="timer-val" id="cdown-val">00:00</div>
         <div class="timer-btns">
-          <button class="timer-btn" onclick="timerStartStop()" id="timer-startstop">▶ Start</button>
-          <button class="timer-btn danger" onclick="timerReset()">↺ Reset</button>
-          <button class="timer-btn" onclick="timerMode()" id="timer-mode-btn">Countdown</button>
-        </div>
-        <div style="display:flex;gap:4px;margin-top:6px" id="timer-presets">
-          <button class="timer-btn" style="font-size:10px" onclick="timerSet(300)">5m</button>
-          <button class="timer-btn" style="font-size:10px" onclick="timerSet(600)">10m</button>
-          <button class="timer-btn" style="font-size:10px" onclick="timerSet(1800)">30m</button>
-          <button class="timer-btn" style="font-size:10px" onclick="timerSet(3600)">1u</button>
+          <button class="timer-btn" onclick="timerStartStop()" id="timer-startstop">▶</button>
+          <button class="timer-btn" onclick="timerReset()">↺</button>
+          <button class="timer-btn" onclick="timerMode()" id="timer-mode-btn">⏱</button>
+          <button class="timer-btn" onclick="timerSet(300)">5m</button>
+          <button class="timer-btn" onclick="timerSet(600)">10m</button>
+          <button class="timer-btn" onclick="timerSet(1800)">30m</button>
         </div>
       </div>
     </div>
-
-    <!-- Volume -->
+    <!-- Browser Mixer -->
     <div class="psec">
-      <div class="ptitle">Bronvolume</div>
-      <div id="vol-list"></div>
-    </div>
-
-    <!-- Vrienden info -->
-    <div class="psec">
-      <div class="ptitle">Vrienden stream</div>
-      <div class="hint-box" style="font-size:10px">
-        <strong>Vriend stuurt RTMP naar jou:</strong><br>
-        OBS → Instellingen → Stream → Custom<br>
-        Server: <code>rtmp://jouw-ip/live</code><br><br>
-        <strong>Jij laadt als HLS bron:</strong><br>
-        <code>http://jouw-ip:8080/hls/stream.m3u8</code>
+      <div class="ptitle" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Browser Mixer</span>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:9px;color:var(--text);font-weight:600;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="mix-toggle" onchange="toggleMixer(this.checked)" style="accent-color:var(--amber)"> Aan
+        </label>
+      </div>
+      <div id="mix-body" style="display:none">
+        <div class="mix-preview"><canvas id="mix-canvas"></canvas></div>
+        <div style="display:flex;gap:2px;margin-bottom:4px">
+          <button class="ttbtn active" data-m="pgm" onclick="setMixMode(this)">PGM</button>
+          <button class="ttbtn" data-m="multi" onclick="setMixMode(this)">MULTI</button>
+          <button class="ttbtn" data-m="pgm+prv" onclick="setMixMode(this)">PGM+PRV</button>
+        </div>
+        <button class="btn btn-o btn-block" style="font-size:10px" id="btn-mixrec" onclick="toggleMixRec()">⏺ BROWSER REC</button>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- HELP BAR -->
+<!-- ═══════ TRANSITION BAR ═══════ -->
+<div id="trans-bar">
+  <div class="trans-sec" style="gap:6px">
+    <div class="ttype-row">
+      <button class="ttbtn active" data-t="Cut" onclick="selTrans(this)">CUT</button>
+      <button class="ttbtn" data-t="Fade" onclick="selTrans(this)">MIX</button>
+      <button class="ttbtn" data-t="Wipe" onclick="selTrans(this)">WIPE</button>
+      <button class="ttbtn" data-t="Slide" onclick="selTrans(this)">DIP</button>
+    </div>
+    <div class="dur-row">
+      <input type="range" min="100" max="3000" step="100" value="500" id="tdur" oninput="tdurChange(this.value)">
+      <span class="dur-lbl" id="tdur-lbl">500ms</span>
+    </div>
+  </div>
+  <div class="trans-sec">
+    <div class="tbar-wrap">
+      <div class="tbar-label">T-BAR</div>
+      <div class="tbar-track" id="tbar-track"><div class="tbar-thumb" id="tbar-thumb"></div></div>
+    </div>
+  </div>
+  <div class="trans-sec" style="gap:6px">
+    <button class="trans-btn cut-btn" id="btn-cut" onclick="doCut()">CUT</button>
+    <button class="trans-btn auto-btn" onclick="doAuto()">AUTO</button>
+    <button class="trans-btn ftb-btn" id="ftb-btn" onclick="doFTB()">FTB</button>
+  </div>
+</div>
+
+<!-- ═══════ HELPBAR ═══════ -->
 <div id="helpbar">
   <span><kbd>Space</kbd> CUT</span>
   <span><kbd>Enter</kbd> AUTO</span>
-  <span><kbd>1–9</kbd> Preview + OBS sync</span>
-  <span><kbd>F</kbd> Volledig scherm</span>
-  <span><kbd>R</kbd> Opname</span>
-  <span><kbd>M</kbd> Mixer opname</span>
+  <span><kbd>1–9</kbd> Preview</span>
+  <span><kbd>F</kbd> Fullscreen</span>
+  <span><kbd>R</kbd> Record</span>
+  <span><kbd>B</kbd> FTB</span>
   <span><kbd>T</kbd> Timer</span>
-  <span>Rechts-klik cel → bron</span>
-  <span>Rechts-klik OBS scène → PRV</span>
-  <span>Rechts-klik OBS bron → toon/verberg</span>
+  <span>Klik=PRV · Dubbelklik=PGM · Rechts-klik=menu</span>
 </div>
 
-<!-- MODAL -->
+<!-- MODALS -->
 <div class="overlay hidden" id="add-modal" onclick="if(event.target===this)closeModal('add-modal')">
   <div class="modal">
-    <h2>➕ Bron toevoegen</h2>
-    <div class="modal-row">
-      <label>Type</label>
+    <h2>Bron toevoegen</h2>
+    <div class="modal-row"><label>Type</label>
       <div class="typepicker">
-        <button class="typebtn active" data-st="url" onclick="pickType(this)">🎬 Video URL</button>
-        <button class="typebtn" data-st="hls" onclick="pickType(this)">📡 HLS Stream</button>
+        <button class="typebtn active" data-st="url" onclick="pickType(this)">🎬 Video</button>
+        <button class="typebtn" data-st="hls" onclick="pickType(this)">📡 HLS</button>
         <button class="typebtn twitch-btn" data-st="twitch" onclick="pickType(this)">🟣 Twitch</button>
-        <button class="typebtn yt-btn" data-st="youtube" onclick="pickType(this)">▶️ YouTube</button>
+        <button class="typebtn yt-btn" data-st="youtube" onclick="pickType(this)">▶ YouTube</button>
         <button class="typebtn" data-st="webcam" onclick="pickType(this)">📷 Webcam</button>
         <button class="typebtn" data-st="screen" onclick="pickType(this)">🖥 Scherm</button>
       </div>
     </div>
-    <div class="modal-row">
-      <label>Naam</label>
-      <input class="inp" id="src-name" placeholder="bijv. Camera 1">
-    </div>
-    <div id="url-row" class="modal-row">
-      <label id="url-lbl">Video URL</label>
-      <input class="inp" id="src-url" placeholder="https://...">
-      <div class="hint-box" id="url-hint" style="font-size:10px"></div>
-    </div>
-    <div id="twitch-row" class="modal-row" style="display:none">
-      <label>Twitch kanaalnaam</label>
-      <input class="inp" id="twitch-ch" placeholder="bijv. shroud">
-      <div class="hint-box" style="font-size:10px"><strong>Embed — visueel zichtbaar, niet mixbaar</strong><br>De Twitch speler verschijnt live in je multiview.</div>
-    </div>
-    <div id="yt-row" class="modal-row" style="display:none">
-      <label>YouTube URL</label>
-      <input class="inp" id="yt-url" placeholder="https://youtube.com/watch?v=...">
-      <div class="hint-box" style="font-size:10px"><strong>Embed — visueel zichtbaar, niet mixbaar</strong><br>Werkt voor live streams en video's.</div>
-    </div>
-    <div id="cam-row" class="modal-row" style="display:none">
-      <label>Camera apparaat</label>
-      <select class="inp" id="cam-sel"></select>
-    </div>
-    <div class="mac">
-      <button class="btn btn-o" onclick="closeModal('add-modal')">Annuleren</button>
-      <button class="btn btn-p" onclick="confirmAdd()">Toevoegen</button>
-    </div>
+    <div class="modal-row"><label>Naam</label><input class="inp" id="src-name" placeholder="Camera 1"></div>
+    <div id="url-row" class="modal-row"><label id="url-lbl">URL</label><input class="inp" id="src-url" placeholder="https://..."><div class="hint-box" id="url-hint"></div></div>
+    <div id="twitch-row" class="modal-row" style="display:none"><label>Twitch kanaal</label><input class="inp" id="twitch-ch" placeholder="shroud"></div>
+    <div id="yt-row" class="modal-row" style="display:none"><label>YouTube URL</label><input class="inp" id="yt-url" placeholder="https://youtube.com/watch?v=..."></div>
+    <div id="cam-row" class="modal-row" style="display:none"><label>Camera</label><select class="inp" id="cam-sel"></select></div>
+    <div class="mac"><button class="btn btn-o" onclick="closeModal('add-modal')">Annuleren</button><button class="btn btn-p" onclick="confirmAdd()">Toevoegen</button></div>
   </div>
 </div>
-
-<!-- OBS Source assign modal -->
 <div class="overlay hidden" id="obs-assign-modal" onclick="if(event.target===this)closeModal('obs-assign-modal')">
   <div class="modal" style="width:360px">
-    <h2>OBS Bron toewijzen</h2>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:12px" id="obs-assign-name"></div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:8px">Aan welke cel toewijzen?</div>
-    <div id="obs-assign-cells" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
-    <div class="mac">
-      <button class="btn btn-o" onclick="closeModal('obs-assign-modal')">Annuleren</button>
-    </div>
+    <h2>OBS Bron → Cel</h2>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:8px" id="obs-assign-name"></div>
+    <div id="obs-assign-cells" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px"></div>
+    <div class="mac"><button class="btn btn-o" onclick="closeModal('obs-assign-modal')">Sluiten</button></div>
   </div>
 </div>
-
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════
-// OBS WebSocket v5
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// OBS WEBSOCKET v5
+// ══════════════════════════════════════════════════════
 class OBSWs{
   constructor(){this.ws=null;this.ok=false;this.rid=1;this.q=new Map();this.onEvt=null;this.onUp=null;this.onDown=null}
   async connect(host,port,pw){
@@ -899,13 +634,7 @@ class OBSWs{
       this.ws.onmessage=async e=>{
         try{
           const{op,d}=JSON.parse(e.data);
-          if(op===0){
-            clearTimeout(to);
-            let auth=null;
-            if(d.authentication&&pw)auth=await this._auth(pw,d.authentication.challenge,d.authentication.salt);
-            // Subscribe to all events including VU meters (65536) + all standard (2047)
-            this._tx(1,{rpcVersion:1,...(auth&&{authentication:auth}),eventSubscriptions:67583});
-          }
+          if(op===0){clearTimeout(to);let auth=null;if(d.authentication&&pw)auth=await this._auth(pw,d.authentication.challenge,d.authentication.salt);this._tx(1,{rpcVersion:1,...(auth&&{authentication:auth}),eventSubscriptions:67583})}
           else if(op===2){this.ok=true;res();this.onUp?.()}
           else if(op===5){this.onEvt?.(d.eventType,d.eventData||{})}
           else if(op===7){const cb=this.q.get(d.requestId);if(cb){this.q.delete(d.requestId);d.requestStatus.result?cb.res(d.responseData||{}):cb.rej(new Error(d.requestStatus.comment))}}
@@ -916,171 +645,101 @@ class OBSWs{
     });
   }
   _tx(op,d){if(this.ws?.readyState===1)this.ws.send(JSON.stringify({op,d}))}
-  req(type,data={}){
-    return new Promise((res,rej)=>{
-      const id=String(this.rid++);this.q.set(id,{res,rej});
-      this._tx(6,{requestType:type,requestId:id,requestData:data});
-      setTimeout(()=>{if(this.q.has(id)){this.q.delete(id);rej(new Error('Timeout'))}},8000);
-    });
-  }
-  async _auth(pw,ch,salt){
-    const enc=new TextEncoder(),dig=d=>crypto.subtle.digest('SHA-256',enc.encode(d)),b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
-    return b64(await dig(b64(await dig(pw+salt))+ch));
-  }
+  req(type,data={}){return new Promise((res,rej)=>{const id=String(this.rid++);this.q.set(id,{res,rej});this._tx(6,{requestType:type,requestId:id,requestData:data});setTimeout(()=>{if(this.q.has(id)){this.q.delete(id);rej(new Error('Timeout'))}},8000)})}
+  async _auth(pw,ch,salt){const enc=new TextEncoder(),dig=d=>crypto.subtle.digest('SHA-256',enc.encode(d)),b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));return b64(await dig(b64(await dig(pw+salt))+ch))}
   disconnect(){this.ws?.close();this.ok=false}
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // CANVAS MIXER
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 const mixer={
-  canvas:null,ctx:null,stream:null,running:false,
-  recorder:null,recChunks:[],recActive:false,mode:'pgm',quality:1080,rafId:null,
-  init(){
-    this.canvas=document.getElementById('mix-canvas');
-    this.setQuality(1080);this.ctx=this.canvas.getContext('2d');
-  },
-  setQuality(q){
-    this.quality=q;
-    const dims={720:[1280,720],1080:[1920,1080],2160:[3840,2160]};
-    const[w,h]=dims[q]||[1920,1080];
-    if(this.canvas){this.canvas.width=w;this.canvas.height=h}
-  },
-  start(){
-    if(this.running)return;this.running=true;
-    this.stream=this.canvas.captureStream(30);this.draw();setPill('pill-mix',true);
-  },
-  stop(){
-    this.running=false;if(this.rafId)cancelAnimationFrame(this.rafId);
-    if(this.recActive)this.stopRec();this.stream=null;setPill('pill-mix',false);
-  },
+  canvas:null,ctx:null,stream:null,running:false,recorder:null,recChunks:[],recActive:false,mode:'pgm',quality:1080,rafId:null,
+  init(){this.canvas=document.getElementById('mix-canvas');this.canvas.width=1920;this.canvas.height=1080;this.ctx=this.canvas.getContext('2d')},
+  start(){if(this.running)return;this.running=true;this.stream=this.canvas.captureStream(30);this.draw()},
+  stop(){this.running=false;if(this.rafId)cancelAnimationFrame(this.rafId);if(this.recActive)this.stopRec();this.stream=null},
   draw(){
     if(!this.running)return;
-    const ctx=this.ctx,w=this.canvas.width,h=this.canvas.height;
-    ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
+    const ctx=this.ctx,w=1920,h=1080;ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
     if(this.mode==='pgm'){this._src(S.pgm,0,0,w,h)}
     else if(this.mode==='pgm+prv'){this._src(S.pgm,0,0,w/2,h);this._src(S.prv,w/2,0,w/2,h)}
-    else{
-      const srcs=S.cells.filter(c=>c.srcId&&!c.isEmbed).slice(0,4);
-      const cols=2,cw=w/cols,ch=h/Math.ceil(srcs.length/cols||1);
-      srcs.forEach((c,i)=>this._src(c.srcId,(i%cols)*cw,Math.floor(i/cols)*ch,cw,ch));
-    }
-    // PGM overlay
-    ctx.fillStyle='rgba(255,45,85,.85)';ctx.fillRect(16,16,140,36);
-    ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(h/55)}px "Segoe UI",sans-serif`;
-    ctx.textAlign='left';ctx.fillText('● PROGRAM',22,40);
-    // Clock
-    ctx.font=`${Math.floor(h/60)}px monospace`;ctx.fillStyle='rgba(255,255,255,.6)';
-    ctx.textAlign='right';ctx.fillText(new Date().toLocaleTimeString('nl-NL'),w-16,h-14);
+    else{const srcs=S.cells.filter(c=>c.srcId&&!c.isEmbed).slice(0,4);const cols=2,cw=w/cols,ch2=h/Math.ceil(srcs.length/cols||1);srcs.forEach((c,i)=>this._src(c.srcId,(i%cols)*cw,Math.floor(i/cols)*ch2,cw,ch2))}
+    ctx.fillStyle='rgba(232,17,35,.9)';ctx.fillRect(12,12,100,28);ctx.fillStyle='#fff';ctx.font='bold 16px "Segoe UI"';ctx.textAlign='left';ctx.fillText('● PGM',18,32);
+    ctx.font='14px monospace';ctx.fillStyle='rgba(255,255,255,.5)';ctx.textAlign='right';ctx.fillText(new Date().toLocaleTimeString('nl-NL'),w-12,h-10);
     this.rafId=requestAnimationFrame(()=>this.draw());
   },
-  _src(sid,x,y,w,h){
-    if(!sid)return;
-    const cell=S.cells.find(c=>c.srcId===sid);
-    if(!cell||cell.isEmbed)return;
-    try{this.ctx.drawImage(cell.vid,x,y,w,h)}catch(e){}
-  },
-  startRec(){
-    if(!this.stream||this.recActive)return;
-    this.recChunks=[];
-    const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm';
-    this.recorder=new MediaRecorder(this.stream,{mimeType:mime,videoBitsPerSecond:8000000});
-    this.recorder.ondataavailable=e=>{if(e.data.size>0)this.recChunks.push(e.data)};
-    this.recorder.onstop=()=>this._dl();
-    this.recorder.start(500);this.recActive=true;
-    document.getElementById('btn-mixrec').textContent='⏹ Opname stoppen';
-    document.getElementById('btn-mixrec').classList.add('on');
-    document.getElementById('mix-rec-info').textContent='🔴 Opname bezig...';
-  },
-  stopRec(){
-    this.recorder?.stop();this.recActive=false;
-    document.getElementById('btn-mixrec').textContent='⏺ Browser opname starten';
-    document.getElementById('btn-mixrec').classList.remove('on');
-    document.getElementById('mix-rec-info').textContent='Slaat op als .webm bestand';
-  },
-  _dl(){
-    const blob=new Blob(this.recChunks,{type:'video/webm'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`stream-mix-${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.webm`;
-    a.click();toast('Opname gedownload!');
-  }
+  _src(sid,x,y,w,h){if(!sid)return;const cell=S.cells.find(c=>c.srcId===sid);if(!cell||cell.isEmbed)return;try{this.ctx.drawImage(cell.vid,x,y,w,h)}catch(e){}},
+  startRec(){if(!this.stream||this.recActive)return;this.recChunks=[];const mime=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9':'video/webm';this.recorder=new MediaRecorder(this.stream,{mimeType:mime,videoBitsPerSecond:8000000});this.recorder.ondataavailable=e=>{if(e.data.size>0)this.recChunks.push(e.data)};this.recorder.onstop=()=>this._dl();this.recorder.start(500);this.recActive=true;document.getElementById('btn-mixrec').textContent='⏹ STOPPEN'},
+  stopRec(){this.recorder?.stop();this.recActive=false;document.getElementById('btn-mixrec').textContent='⏺ BROWSER REC'},
+  _dl(){const blob=new Blob(this.recChunks,{type:'video/webm'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`mix-${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.webm`;a.click();toast('Opname gedownload!')}
 };
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 const obs=new OBSWs();
 const S={
   sources:[],cells:[],pgm:null,prv:null,layout:4,selType:'url',
-  tdur:500,rec:false,str:false,recT:null,
+  tdur:500,rec:false,str:false,recT:null,ftb:false,
   obsScenes:[],obsScene:null,obsPreviewScene:null,obsTrans:[],obsTransCur:null,
-  obsInputs:[],obsStudioMode:false,
-  sceneLinks:{}, // sourceId → obsSceneName mapping
-  volumes:{},nid:1,
-  thumbTimers:{},
-  assignSrc:null, // for OBS source assignment
+  obsInputs:[],obsSceneItems:[],obsStudioMode:false,
+  sceneLinks:{},volumes:{},nid:1,assignSrc:null,
+  cellVU:{}, // per-cell VU data
 };
 
-// ══════════════════════════════════════════════════
-// VIDEO
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// VIDEO ATTACH
+// ══════════════════════════════════════════════════════
 function attachVid(vEl,srcId){
-  if(!vEl)return;
-  if(vEl._hls){vEl._hls.destroy();vEl._hls=null}
-  vEl.src='';vEl.srcObject=null;
-  const s=S.sources.find(x=>x.id===srcId);
-  if(!s)return;
+  if(!vEl)return;if(vEl._hls){vEl._hls.destroy();vEl._hls=null}vEl.src='';vEl.srcObject=null;
+  const s=S.sources.find(x=>x.id===srcId);if(!s)return;
   if(s.type==='twitch'||s.type==='youtube'||s.type==='obssnap')return;
   if(s.stream){vEl.srcObject=s.stream;vEl.muted=true;vEl.play().catch(()=>{})}
   else if(s.type==='hls'){
-    if(typeof Hls!=='undefined'&&Hls.isSupported()){
-      const h=new Hls({enableWorker:true,lowLatencyMode:true});
-      h.loadSource(s.url);h.attachMedia(vEl);vEl._hls=h;vEl.muted=true;
-      h.on(Hls.Events.MANIFEST_PARSED,()=>vEl.play().catch(()=>{}));
-    }else{vEl.src=s.url;vEl.play().catch(()=>{})}
+    if(typeof Hls!=='undefined'&&Hls.isSupported()){const h=new Hls({enableWorker:true,lowLatencyMode:true});h.loadSource(s.url);h.attachMedia(vEl);vEl._hls=h;vEl.muted=true;h.on(Hls.Events.MANIFEST_PARSED,()=>vEl.play().catch(()=>{}))}
+    else{vEl.src=s.url;vEl.play().catch(()=>{})}
   }else if(s.url){vEl.src=s.url;vEl.muted=true;vEl.play().catch(()=>{})}
 }
-
 function iframeSrc(src){
-  if(src.type==='twitch'){
-    const h=location.hostname||'localhost';
-    return `https://player.twitch.tv/?channel=${encodeURIComponent(src.channel)}&parent=${h}&autoplay=true`;
-  }
-  if(src.type==='youtube')return `https://www.youtube.com/embed/${src.ytId}?autoplay=1&rel=0`;
-  return '';
+  if(src.type==='twitch'){const h=location.hostname||'localhost';return `https://player.twitch.tv/?channel=${encodeURIComponent(src.channel)}&parent=${h}&autoplay=true`}
+  if(src.type==='youtube')return `https://www.youtube.com/embed/${src.ytId}?autoplay=1&rel=0`;return '';
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // LAYOUT / CELLS
-// ══════════════════════════════════════════════════
-const LAYOUTS={1:'layout-1',2:'layout-2',3:'layout-3',4:'layout-4',6:'layout-6',8:'layout-8',9:'layout-9',10:'layout-10',12:'layout-12',15:'layout-15',16:'layout-16',20:'layout-20',24:'layout-24',25:'layout-25',30:'layout-30',36:'layout-36','1p4':'layout-1p4','1p5':'layout-1p5','1p7':'layout-1p7','1p9':'layout-1p9','2p8':'layout-2p8'};
-const COUNTS={1:1,2:2,3:3,4:4,6:6,8:8,9:9,10:10,12:12,15:15,16:16,20:20,24:24,25:25,30:30,36:36,'1p4':5,'1p5':6,'1p7':8,'1p9':10,'2p8':10};
+// ══════════════════════════════════════════════════════
+const LAYOUTS={1:'layout-1',2:'layout-2',3:'layout-3',4:'layout-4',6:'layout-6',8:'layout-8',9:'layout-9',10:'layout-10',12:'layout-12',15:'layout-15',16:'layout-16',20:'layout-20',25:'layout-25',36:'layout-36','1p4':'layout-1p4','1p5':'layout-1p5','1p7':'layout-1p7'};
+const COUNTS={1:1,2:2,3:3,4:4,6:6,8:8,9:9,10:10,12:12,15:15,16:16,20:20,25:25,36:36,'1p4':5,'1p5':6,'1p7':8};
 
 function setLayout(l){
-  S.layout=l;
-  document.querySelectorAll('.lpbtn').forEach(b=>b.classList.toggle('active',String(b.dataset.l)===String(l)));
-  const mv=document.getElementById('mv');
-  S.cells.forEach(c=>{if(c.vid?._hls)c.vid._hls.destroy()});
+  S.layout=l;document.querySelectorAll('.lpbtn').forEach(b=>b.classList.toggle('active',String(b.dataset.l)===String(l)));
+  const mv=document.getElementById('mv');S.cells.forEach(c=>{if(c.vid?._hls)c.vid._hls.destroy();stopSnapUpdater(c)});
   S.cells=[];mv.innerHTML='';mv.className=LAYOUTS[l]||'layout-4';
-  for(let i=0;i<(COUNTS[l]||4);i++){
-    const cell=makeCell(i,S.sources[i]?.id||null);
-    S.cells.push(cell);mv.appendChild(cell.el);
-  }
+  for(let i=0;i<(COUNTS[l]||4);i++){const cell=makeCell(i,S.sources[i]?.id||null);S.cells.push(cell);mv.appendChild(cell.el)}
   updTallies();
 }
 
 function makeCell(idx,srcId){
-  const el=document.createElement('div');
-  el.className='mvcell'+(srcId?' has-src':'');
+  const el=document.createElement('div');el.className='mvcell'+(srcId?' has-src':'');
+  // Video
   const vid=document.createElement('video');vid.muted=true;vid.autoplay=true;vid.playsInline=true;el.appendChild(vid);
+  // Iframe
   const iframe=document.createElement('iframe');iframe.allow='autoplay;fullscreen';iframe.style.display='none';el.appendChild(iframe);
+  // Snapshot
   const snap=document.createElement('img');snap.className='obssnap';snap.style.display='none';el.appendChild(snap);
-  const tbar=document.createElement('div');tbar.className='tbar';el.appendChild(tbar);
-  const lbl=document.createElement('div');lbl.className='vlabel';el.appendChild(lbl);
-  const badge=document.createElement('div');badge.className='idx-badge';badge.textContent=idx+1;el.appendChild(badge);
-  const ns=document.createElement('div');ns.className='nosig';ns.innerHTML=`<div class="icon">📺</div><div class="txt">Cel ${idx+1}</div>`;el.appendChild(ns);
-  const nomix=document.createElement('div');nomix.className='nomix-warn';nomix.textContent='⚠ Embed';el.appendChild(nomix);
-  const cell={el,vid,iframe,snap,srcId,isEmbed:false};
+  // Tally bar
+  const tally=document.createElement('div');tally.className='tally';el.appendChild(tally);
+  // Per-cell audio meter
+  const cellvu=document.createElement('div');cellvu.className='cell-vu';
+  const cellvubar=document.createElement('div');cellvubar.className='cell-vu-bar';cellvubar.style.height='0%';cellvu.appendChild(cellvubar);el.appendChild(cellvu);
+  // UMD (Under Monitor Display) — broadcast standard
+  const umd=document.createElement('div');umd.className='umd';
+  const umdIdx=document.createElement('span');umdIdx.className='umd-idx';umdIdx.textContent=idx+1;
+  const umdName=document.createElement('span');umdName.className='umd-name';umdName.textContent=`INPUT ${idx+1}`;
+  umd.appendChild(umdIdx);umd.appendChild(umdName);el.appendChild(umd);
+  // No signal
+  const ns=document.createElement('div');ns.className='nosig';ns.innerHTML=`<div class="icon">▣</div><div class="txt">NO SIGNAL</div>`;el.appendChild(ns);
+  const cell={el,vid,iframe,snap,srcId,isEmbed:false,vuBar:cellvubar};
   el.addEventListener('click',()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}});
   el.addEventListener('dblclick',()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPgm()}});
   el.addEventListener('contextmenu',e=>{e.preventDefault();showCtx(cell,e.clientX,e.clientY)});
@@ -1089,807 +748,414 @@ function makeCell(idx,srcId){
 }
 
 function setCell(cell,srcId){
-  cell.srcId=srcId;
-  const s=S.sources.find(x=>x.id===srcId);
+  cell.srcId=srcId;const s=S.sources.find(x=>x.id===srcId);
   if(s){
-    cell.el.classList.add('has-src');
-    cell.el.querySelector('.vlabel').textContent=s.name;
-    const isEmbed=s.type==='twitch'||s.type==='youtube';
-    const isSnap=s.type==='obssnap';
-    cell.isEmbed=isEmbed;
-    cell.el.querySelector('.nomix-warn').style.display=(isEmbed||isSnap)?'block':'none';
-    // Show correct element
-    cell.vid.style.display=(isEmbed||isSnap)?'none':'block';
-    cell.iframe.style.display=isEmbed?'block':'none';
-    cell.snap.style.display=isSnap?'block':'none';
-    // Remove old badges
+    cell.el.classList.add('has-src');cell.el.querySelector('.umd-name').textContent=s.name;
+    const isEmbed=s.type==='twitch'||s.type==='youtube';const isSnap=s.type==='obssnap';cell.isEmbed=isEmbed;
+    cell.vid.style.display=(isEmbed||isSnap)?'none':'block';cell.iframe.style.display=isEmbed?'block':'none';cell.snap.style.display=isSnap?'block':'none';
     cell.el.querySelectorAll('.embed-badge,.obs-snap-badge').forEach(b=>b.remove());
-    if(isEmbed){
-      cell.iframe.src=iframeSrc(s);
-      const eb=document.createElement('div');eb.className=`embed-badge ${s.type}`;
-      eb.textContent=s.type==='twitch'?'TWITCH':'YOUTUBE';cell.el.appendChild(eb);
-    }else if(isSnap){
-      const eb=document.createElement('div');eb.className='obs-snap-badge';
-      eb.textContent='OBS';cell.el.appendChild(eb);
-      startSnapUpdater(cell,s);
-    }else{
-      cell.iframe.src='about:blank';attachVid(cell.vid,srcId);
-    }
+    if(isEmbed){cell.iframe.src=iframeSrc(s);const eb=document.createElement('div');eb.className=`embed-badge ${s.type}`;eb.textContent=s.type==='twitch'?'TWITCH':'YT';cell.el.appendChild(eb)}
+    else if(isSnap){const eb=document.createElement('div');eb.className='obs-snap-badge';eb.textContent='OBS';cell.el.appendChild(eb);startSnapUpdater(cell,s)}
+    else{cell.iframe.src='about:blank';attachVid(cell.vid,srcId)}
   }else{
-    cell.el.classList.remove('has-src');cell.el.querySelector('.vlabel').textContent='';
-    cell.isEmbed=false;cell.el.querySelector('.nomix-warn').style.display='none';
-    cell.vid.style.display='block';cell.iframe.style.display='none';
-    cell.iframe.src='about:blank';cell.snap.style.display='none';
+    cell.el.classList.remove('has-src');cell.el.querySelector('.umd-name').textContent=`INPUT ${cell.el.querySelector('.umd-idx').textContent}`;
+    cell.isEmbed=false;cell.vid.style.display='block';cell.iframe.style.display='none';cell.iframe.src='about:blank';cell.snap.style.display='none';
     cell.el.querySelectorAll('.embed-badge,.obs-snap-badge').forEach(b=>b.remove());
-    if(cell.vid._hls){cell.vid._hls.destroy();cell.vid._hls=null}
-    cell.vid.src='';cell.vid.srcObject=null;
-    stopSnapUpdater(cell);
+    if(cell.vid._hls){cell.vid._hls.destroy();cell.vid._hls=null}cell.vid.src='';cell.vid.srcObject=null;stopSnapUpdater(cell);
   }
   updTallies();
 }
 
-// OBS snapshot updater per cell
 function startSnapUpdater(cell,src){
   stopSnapUpdater(cell);
-  const update=async()=>{
-    if(!obs.ok||!src.obsName)return;
-    try{
-      const r=await obs.req('GetSourceScreenshot',{sourceName:src.obsName,imageFormat:'jpeg',imageWidth:480,imageHeight:270,imageCompressionQuality:70});
-      if(r.imageData)cell.snap.src=r.imageData;
-    }catch(e){}
-  };
-  update();
-  cell._snapTimer=setInterval(update,1500);
+  const update=async()=>{if(!obs.ok||!src.obsName)return;try{const r=await obs.req('GetSourceScreenshot',{sourceName:src.obsName,imageFormat:'jpeg',imageWidth:480,imageHeight:270,imageCompressionQuality:70});if(r.imageData)cell.snap.src=r.imageData}catch(e){}};
+  update();cell._snapTimer=setInterval(update,1500);
 }
-function stopSnapUpdater(cell){
-  if(cell._snapTimer){clearInterval(cell._snapTimer);cell._snapTimer=null}
-}
+function stopSnapUpdater(cell){if(cell._snapTimer){clearInterval(cell._snapTimer);cell._snapTimer=null}}
 
-function updTallies(){
-  S.cells.forEach(c=>{
-    c.el.classList.remove('pgm','prv');
-    if(c.srcId===S.pgm)c.el.classList.add('pgm');
-    else if(c.srcId===S.prv)c.el.classList.add('prv');
-  });
-}
+function updTallies(){S.cells.forEach(c=>{c.el.classList.remove('pgm','prv');if(c.srcId===S.pgm)c.el.classList.add('pgm');else if(c.srcId===S.prv)c.el.classList.add('prv')})}
 
 function updMonitors(){
-  const pgmSrc=S.sources.find(s=>s.id===S.pgm);
-  const prvSrc=S.sources.find(s=>s.id===S.prv);
-  const pgmMon=document.getElementById('pgm-mon');
-  const prvMon=document.getElementById('prv-mon');
-  // Ensure iframes exist
+  const pgmSrc=S.sources.find(s=>s.id===S.pgm),prvSrc=S.sources.find(s=>s.id===S.prv);
+  const pgmMon=document.getElementById('pgm-mon'),prvMon=document.getElementById('prv-mon');
   if(!pgmMon.querySelector('iframe')){const f=document.createElement('iframe');f.allow='autoplay;fullscreen';f.style.cssText='width:100%;height:100%;border:none;display:none';pgmMon.appendChild(f)}
   if(!prvMon.querySelector('iframe')){const f=document.createElement('iframe');f.allow='autoplay;fullscreen';f.style.cssText='width:100%;height:100%;border:none;display:none';prvMon.appendChild(f)}
-  const setMon=(mon,src,vid)=>{
-    const f=mon.querySelector('iframe');
-    if(src&&(src.type==='twitch'||src.type==='youtube')){
-      vid.style.display='none';f.style.display='block';f.src=iframeSrc(src);
-    }else{f.style.display='none';f.src='about:blank';vid.style.display='block';attachVid(vid,src?.id)}
-  };
-  setMon(pgmMon,pgmSrc,document.getElementById('pgm-vid'));
-  setMon(prvMon,prvSrc,document.getElementById('prv-vid'));
-  document.getElementById('pgm-nosig').style.display=S.pgm?'none':'flex';
-  document.getElementById('prv-nosig').style.display=S.prv?'none':'flex';
+  const setMon=(mon,src,vid)=>{const f=mon.querySelector('iframe');if(src&&(src.type==='twitch'||src.type==='youtube')){vid.style.display='none';f.style.display='block';f.src=iframeSrc(src)}else{f.style.display='none';f.src='about:blank';vid.style.display='block';attachVid(vid,src?.id)}};
+  setMon(pgmMon,pgmSrc,document.getElementById('pgm-vid'));setMon(prvMon,prvSrc,document.getElementById('prv-vid'));
+  document.getElementById('pgm-nosig').style.display=S.pgm?'none':'flex';document.getElementById('prv-nosig').style.display=S.prv?'none':'flex';
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // OBS SOURCES BROWSER
-// ══════════════════════════════════════════════════
-async function refreshOBSSources(){
-  if(!obs.ok){toast('Verbind eerst met OBS','err');return}
-  await loadOBSSources();
-}
-
+// ══════════════════════════════════════════════════════
+async function refreshOBSSources(){if(!obs.ok){toast('Verbind eerst met OBS','err');return}await loadOBSSources()}
 async function loadOBSSources(){
   try{
-    const{inputs}=await obs.req('GetInputList');
-    S.obsInputs=inputs||[];
-    // Fetch scene items for current scene (includes visibility)
-    if(S.obsScene){
-      try{
-        const{sceneItems}=await obs.req('GetSceneItemList',{sceneName:S.obsScene});
-        S.obsSceneItems=(sceneItems||[]).reverse();
-      }catch(e){S.obsSceneItems=[]}
-    }
-    renderOBSSourceGrid();
-    startObsThumbLoop();
+    const{inputs}=await obs.req('GetInputList');S.obsInputs=inputs||[];
+    if(S.obsScene){try{const{sceneItems}=await obs.req('GetSceneItemList',{sceneName:S.obsScene});S.obsSceneItems=(sceneItems||[]).reverse()}catch(e){S.obsSceneItems=[]}}
+    renderOBSSourceGrid();startObsThumbLoop();
   }catch(e){console.warn('loadOBSSources:',e)}
 }
 
 function renderOBSSourceGrid(){
   const grid=document.getElementById('obs-src-grid');grid.innerHTML='';
-  if(!S.obsInputs.length&&!(S.obsSceneItems||[]).length){
-    grid.innerHTML='<div class="obs-empty" style="grid-column:1/-1">Geen OBS bronnen gevonden</div>';return;
-  }
-  // Show scene items (these are the sources IN the current scene, with visibility)
-  if(S.obsSceneItems&&S.obsSceneItems.length){
-    const hdr=document.createElement('div');
-    hdr.style.cssText='grid-column:1/-1;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:4px 2px;border-bottom:1px solid var(--border)';
-    hdr.textContent=`📺 Scène: ${S.obsScene||'?'} (${S.obsSceneItems.length})`;
-    grid.appendChild(hdr);
+  if(!S.obsInputs.length&&!S.obsSceneItems.length){grid.innerHTML='<div style="grid-column:1/-1;color:var(--dim2);font-size:10px;text-align:center;padding:12px">Geen bronnen</div>';return}
+  if(S.obsSceneItems.length){
+    const hdr=document.createElement('div');hdr.style.cssText='grid-column:1/-1;font-size:8px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:3px 2px;border-bottom:1px solid var(--border)';
+    hdr.textContent=`SCÈNE: ${S.obsScene}`;grid.appendChild(hdr);
     S.obsSceneItems.forEach(item=>{
-      const div=document.createElement('div');div.className='obs-thumb';
-      div.dataset.obsname=item.sourceName;
-      div.style.opacity=item.sceneItemEnabled?'1':'.35';
-      const eyeIcon=item.sceneItemEnabled?'👁':'👁‍🗨';
-      div.innerHTML=`
-        <img src="" alt="" style="min-height:100%;object-fit:cover">
-        <div class="tname">${item.sourceName}</div>
-        <div class="ttype">${(item.inputKind||item.sourceType||'').replace('_source','').replace('_input','')}</div>
-        <div class="tuse" style="flex-direction:column;gap:3px">
-          <span>+ Toevoegen</span>
-          <span style="font-size:9px">${eyeIcon} Klik om zichtbaarheid te wisselen</span>
-        </div>
-      `;
-      div.addEventListener('click',(e)=>{
-        if(e.shiftKey||e.ctrlKey){
-          // Toggle visibility in OBS
-          toggleSceneItemVisibility(item);
-        }else{
-          openObsAssign(item.sourceName);
-        }
-      });
-      // Right-click = toggle visibility
-      div.addEventListener('contextmenu',(e)=>{
-        e.preventDefault();toggleSceneItemVisibility(item);
-      });
+      const div=document.createElement('div');div.className='obs-thumb';div.dataset.obsname=item.sourceName;div.style.opacity=item.sceneItemEnabled?'1':'.3';
+      div.innerHTML=`<img src="" alt=""><div class="tname">${item.sourceName}</div><div class="ttype">${(item.inputKind||item.sourceType||'').replace(/_source|_input/g,'')}</div><div class="tuse">${item.sceneItemEnabled?'+ ADD':'👁 SHOW'}</div>`;
+      div.onclick=e=>{if(e.shiftKey||e.ctrlKey)toggleSceneItemVis(item);else openObsAssign(item.sourceName)};
+      div.oncontextmenu=e=>{e.preventDefault();toggleSceneItemVis(item)};
       grid.appendChild(div);
     });
   }
-  // Also show all inputs
   if(S.obsInputs.length){
-    const hdr2=document.createElement('div');
-    hdr2.style.cssText='grid-column:1/-1;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:4px 2px;border-bottom:1px solid var(--border);margin-top:4px';
-    hdr2.textContent=`🎛 Alle bronnen (${S.obsInputs.length})`;
-    grid.appendChild(hdr2);
+    const hdr=document.createElement('div');hdr.style.cssText='grid-column:1/-1;font-size:8px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;padding:3px 2px;border-bottom:1px solid var(--border);margin-top:3px';
+    hdr.textContent=`ALLE BRONNEN (${S.obsInputs.length})`;grid.appendChild(hdr);
     S.obsInputs.forEach(inp=>{
-      const div=document.createElement('div');div.className='obs-thumb';
-      div.dataset.obsname=inp.inputName;
-      div.innerHTML=`
-        <img src="" alt="" style="min-height:100%;object-fit:cover">
-        <div class="tname">${inp.inputName}</div>
-        <div class="ttype">${(inp.inputKind||'').replace('_source','').replace('_input','')}</div>
-        <div class="tuse">+ Toevoegen</div>
-      `;
-      div.addEventListener('click',()=>openObsAssign(inp.inputName));
-      grid.appendChild(div);
+      const div=document.createElement('div');div.className='obs-thumb';div.dataset.obsname=inp.inputName;
+      div.innerHTML=`<img src="" alt=""><div class="tname">${inp.inputName}</div><div class="ttype">${(inp.inputKind||'').replace(/_source|_input/g,'')}</div><div class="tuse">+ ADD</div>`;
+      div.onclick=()=>openObsAssign(inp.inputName);grid.appendChild(div);
     });
   }
 }
-
-async function toggleSceneItemVisibility(item){
+async function toggleSceneItemVis(item){
   if(!obs.ok||!S.obsScene)return;
-  try{
-    const newEnabled=!item.sceneItemEnabled;
-    await obs.req('SetSceneItemEnabled',{sceneName:S.obsScene,sceneItemId:item.sceneItemId,sceneItemEnabled:newEnabled});
-    item.sceneItemEnabled=newEnabled;
-    renderOBSSourceGrid();
-    toast(`${item.sourceName}: ${newEnabled?'zichtbaar 👁':'verborgen 👁‍🗨'}`);
-  }catch(e){toast(`Fout: ${e.message}`,'err')}
+  try{const nv=!item.sceneItemEnabled;await obs.req('SetSceneItemEnabled',{sceneName:S.obsScene,sceneItemId:item.sceneItemId,sceneItemEnabled:nv});item.sceneItemEnabled=nv;renderOBSSourceGrid();toast(`${item.sourceName}: ${nv?'AAN':'UIT'}`)}catch(e){toast(e.message,'err')}
 }
 
 let obsThumbLoop=null;
 function startObsThumbLoop(){
-  if(obsThumbLoop)clearInterval(obsThumbLoop);
-  let idx=0;
+  if(obsThumbLoop)clearInterval(obsThumbLoop);let idx=0;
   obsThumbLoop=setInterval(async()=>{
-    if(!obs.ok||!S.obsInputs.length)return;
+    if(!obs.ok||!S.obsInputs.length)return;const obst=document.getElementById('tab-obs');if(!obst.classList.contains('active'))return;
     const inp=S.obsInputs[idx%S.obsInputs.length];idx++;
-    // Only update if OBS tab is visible
-    const obst=document.getElementById('tab-obs');
-    if(!obst.classList.contains('active'))return;
-    try{
-      const r=await obs.req('GetSourceScreenshot',{sourceName:inp.inputName,imageFormat:'jpeg',imageWidth:240,imageHeight:135,imageCompressionQuality:60});
-      if(r.imageData){
-        const el=document.querySelector(`[data-obsname="${CSS.escape(inp.inputName)}"] img`);
-        if(el)el.src=r.imageData;
-      }
-    }catch(e){}
-  },600); // cycle through sources
+    try{const r=await obs.req('GetSourceScreenshot',{sourceName:inp.inputName,imageFormat:'jpeg',imageWidth:240,imageHeight:135,imageCompressionQuality:60});if(r.imageData){const el=document.querySelector(`[data-obsname="${CSS.escape(inp.inputName)}"] img`);if(el)el.src=r.imageData}}catch(e){}
+  },600);
 }
 
 function openObsAssign(name){
-  S.assignSrc=name;
-  document.getElementById('obs-assign-name').textContent=`Bron: "${name}"`;
+  S.assignSrc=name;document.getElementById('obs-assign-name').textContent=`"${name}"`;
   const grid=document.getElementById('obs-assign-cells');grid.innerHTML='';
   S.cells.forEach((cell,i)=>{
-    const btn=document.createElement('button');
-    btn.className='timer-btn';
-    btn.style.cssText='padding:10px;text-align:center;font-size:11px';
-    btn.innerHTML=`Cel ${i+1}<br><span style="font-size:9px;color:var(--dim)">${cell.srcId?S.sources.find(s=>s.id===cell.srcId)?.name||'bezet':'leeg'}</span>`;
-    btn.onclick=()=>{
-      assignObsSource(name,i);closeModal('obs-assign-modal');
-    };
-    grid.appendChild(btn);
+    const btn=document.createElement('button');btn.className='timer-btn';btn.style.cssText='padding:8px;text-align:center';
+    btn.innerHTML=`<b>${i+1}</b><br><span style="font-size:8px;color:var(--dim)">${cell.srcId?S.sources.find(s=>s.id===cell.srcId)?.name||'—':'leeg'}</span>`;
+    btn.onclick=()=>{assignObsSource(name,i);closeModal('obs-assign-modal')};grid.appendChild(btn);
   });
-  // Also offer to add as new source
-  const addBtn=document.createElement('button');
-  addBtn.className='timer-btn';addBtn.style.cssText='grid-column:1/-1;padding:10px;color:var(--blue)';
-  addBtn.textContent='+ Als nieuwe bron toevoegen';
-  addBtn.onclick=()=>{addObsSourceToList(name);closeModal('obs-assign-modal')};
-  grid.appendChild(addBtn);
+  const addBtn=document.createElement('button');addBtn.className='timer-btn';addBtn.style.cssText='grid-column:1/-1;padding:6px;color:var(--blue)';addBtn.textContent='+ Als nieuwe bron';
+  addBtn.onclick=()=>{addObsSourceToList(name);closeModal('obs-assign-modal')};grid.appendChild(addBtn);
   openModal('obs-assign-modal');
 }
-
-function addObsSourceToList(name){
-  // Add as obssnap source
-  const id=addSrc(name,'obssnap',{obsName:name,url:''});
-  toast(`OBS bron "${name}" toegevoegd als preview`);
-}
-
+function addObsSourceToList(name){addSrc(name,'obssnap',{obsName:name,url:''})}
 function assignObsSource(name,cellIdx){
   const cell=S.cells[cellIdx];if(!cell)return;
-  // Check if source already exists
   let src=S.sources.find(s=>s.type==='obssnap'&&s.obsName===name);
-  if(!src){
-    const id=String(S.nid++);
-    src={id,name,type:'obssnap',obsName:name,url:'',stream:null};
-    S.volumes[id]=1;S.sources.push(src);
-  }
-  setCell(cell,src.id);
-  if(!S.pgm){S.pgm=src.id;updMonitors()}
-  else if(!S.prv&&S.pgm!==src.id){S.prv=src.id;updMonitors()}
-  updSrcList();updTallies();updVolList();
-  toast(`"${name}" toegewezen aan cel ${cellIdx+1}`);
+  if(!src){const id=String(S.nid++);src={id,name,type:'obssnap',obsName:name,url:'',stream:null};S.volumes[id]=1;S.sources.push(src)}
+  setCell(cell,src.id);if(!S.pgm){S.pgm=src.id;updMonitors()}else if(!S.prv&&S.pgm!==src.id){S.prv=src.id;updMonitors()}
+  updSrcList();updTallies();toast(`"${name}" → cel ${cellIdx+1}`);
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // SOURCE MANAGEMENT
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function addSrc(name,type,opts){
-  const id=String(S.nid++);
-  S.volumes[id]=1;
-  S.sources.push({id,name,type,...opts});
+  const id=String(S.nid++);S.volumes[id]=1;S.sources.push({id,name,type,...opts});
   const ec=S.cells.find(c=>!c.srcId);if(ec)setCell(ec,id);
-  if(!S.pgm){S.pgm=id;updMonitors()}
-  else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}
-  updSrcList();updTallies();updVolList();
-  toast(`"${name}" toegevoegd`);
-  return id;
+  if(!S.pgm){S.pgm=id;updMonitors()}else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}
+  updSrcList();updTallies();toast(`"${name}" toegevoegd`);return id;
 }
-
 function removeSrc(id){
   S.cells.forEach(c=>{if(c.srcId===id)setCell(c,null)});
-  const s=S.sources.find(x=>x.id===id);
-  if(s?.stream)s.stream.getTracks().forEach(t=>t.stop());
-  if(S.pgm===id){S.pgm=null;updMonitors()}
-  if(S.prv===id){S.prv=null;updMonitors()}
-  S.sources=S.sources.filter(x=>x.id!==id);delete S.volumes[id];
-  updSrcList();updTallies();updVolList();
+  const s=S.sources.find(x=>x.id===id);if(s?.stream)s.stream.getTracks().forEach(t=>t.stop());
+  if(S.pgm===id){S.pgm=null;updMonitors()}if(S.prv===id){S.prv=null;updMonitors()}
+  S.sources=S.sources.filter(x=>x.id!==id);delete S.volumes[id];delete S.sceneLinks[id];
+  updSrcList();updTallies();
 }
 
 function updSrcList(){
   const el=document.getElementById('srclist');el.innerHTML='';
-  if(!S.sources.length){
-    el.innerHTML='<div style="text-align:center;color:var(--dim2);font-size:11px;padding:20px;line-height:1.8">Geen bronnen<br>Voeg een bron toe</div>';return;
-  }
-  const icons={hls:'📡',url:'🎬',webcam:'📷',screen:'🖥',twitch:'🟣',youtube:'▶️',test:'🎨',obssnap:'🎬'};
+  if(!S.sources.length){el.innerHTML='<div style="text-align:center;color:var(--dim2);font-size:10px;padding:16px;line-height:1.8">Geen bronnen</div>';return}
   S.sources.forEach(s=>{
-    const d=document.createElement('div');
-    d.className='src-item'+(s.id===S.pgm?' pgm':s.id===S.prv?' prv':'');
-    d.innerHTML=`
-      <div class="src-tally"></div>
-      <span class="src-name">${icons[s.type]||'📺'} ${s.name}</span>
-      <span class="src-badge ${s.type}">${s.type==='obssnap'?'OBS':s.type}</span>
-      <button class="btn-rm" onclick="event.stopPropagation();removeSrc('${s.id}')">✕</button>
-    `;
-    d.addEventListener('click',()=>{S.prv=s.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()});
-    el.appendChild(d);
+    const d=document.createElement('div');d.className='src-item'+(s.id===S.pgm?' pgm':s.id===S.prv?' prv':'');
+    d.innerHTML=`<div class="src-tally"></div><span class="src-name">${s.name}</span><span class="src-badge">${s.type==='obssnap'?'OBS':s.type}</span><button class="btn-rm" onclick="event.stopPropagation();removeSrc('${s.id}')">✕</button>`;
+    d.addEventListener('click',()=>{S.prv=s.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()});el.appendChild(d);
   });
 }
 
-function updVolList(){
-  const el=document.getElementById('vol-list');el.innerHTML='';
-  S.sources.filter(s=>s.type!=='twitch'&&s.type!=='youtube').forEach(s=>{
-    const row=document.createElement('div');row.style.marginBottom='7px';
-    row.innerHTML=`
-      <div style="font-size:10px;color:var(--dim);margin-bottom:2px">${s.name}</div>
-      <div class="volrow">
-        <span class="vollbl">🔊</span>
-        <input class="vol" type="range" min="0" max="1" step="0.01" value="${S.volumes[s.id]||1}" oninput="setVol('${s.id}',+this.value)">
-        <span style="font-size:10px;color:var(--dim);min-width:32px">${Math.round((S.volumes[s.id]||1)*100)}%</span>
-      </div>
-    `;el.appendChild(row);
-  });
-}
-
-function setVol(id,v){
-  S.volumes[id]=v;
-  S.cells.filter(c=>c.srcId===id).forEach(c=>{try{c.vid.volume=v}catch(e){}});
-  try{if(S.pgm===id)document.getElementById('pgm-vid').volume=v}catch(e){}
-  updVolList();
-}
-
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // DEMO SOURCES
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function addDemoSources(){
-  [{name:'Camera 1',c:'#1a237e',t:'CAM 1'},{name:'Camera 2',c:'#1b5e20',t:'CAM 2'},
-   {name:'Camera 3',c:'#b71c1c',t:'CAM 3'},{name:'Camera 4',c:'#4a148c',t:'CAM 4'}]
-  .forEach(d=>{
-    if(S.sources.find(s=>s.name===d.name))return;
-    addSrc(d.name,'test',{stream:makeTestPattern(d.name,d.c,d.t)});
-  });
+  [{name:'CAM 1',c:'#0d1b4a',t:'1'},{name:'CAM 2',c:'#1a3a0d',t:'2'},{name:'CAM 3',c:'#4a0d0d',t:'3'},{name:'CAM 4',c:'#2d0d4a',t:'4'},{name:'CAM 5',c:'#0d3a3a',t:'5'},{name:'CAM 6',c:'#3a2d0d',t:'6'}]
+  .forEach(d=>{if(S.sources.find(s=>s.name===d.name))return;addSrc(d.name,'test',{stream:makeTestPattern(d.name,d.c,d.t)})});
 }
-
 function makeTestPattern(label,bg,text){
-  const c=document.createElement('canvas');c.width=1920;c.height=1080;
-  const ctx=c.getContext('2d');
+  const c=document.createElement('canvas');c.width=1920;c.height=1080;const ctx=c.getContext('2d');
   function draw(){
-    ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
-    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
-    for(let x=0;x<1920;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,1080);ctx.stroke()}
-    for(let y=0;y<1080;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1920,y);ctx.stroke()}
-    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 130px "Segoe UI",sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,960,540);
-    ctx.font='bold 38px "Segoe UI",sans-serif';ctx.fillStyle='rgba(255,255,255,.4)';
-    ctx.fillText(label,960,670);
-    ctx.font='bold 48px monospace';ctx.fillStyle='rgba(255,255,255,.5)';
-    ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText(new Date().toLocaleTimeString('nl-NL'),1880,1060);
+    ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
+    ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;
+    for(let x=0;x<1920;x+=96){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,1080);ctx.stroke()}
+    for(let y=0;y<1080;y+=96){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1920,y);ctx.stroke()}
+    // Crosshair
+    ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(960,0);ctx.lineTo(960,1080);ctx.moveTo(0,540);ctx.lineTo(1920,540);ctx.stroke();
+    // Safe area
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.strokeRect(96,54,1728,972);ctx.strokeRect(192,108,1536,864);
+    // Source number
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 200px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,960,500);
+    ctx.font='bold 32px "Segoe UI"';ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillText(label,960,650);
+    ctx.font='bold 42px monospace';ctx.fillStyle='rgba(255,255,255,.4)';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText(new Date().toLocaleTimeString('nl-NL'),1870,1050);
+    // Color bars at bottom
+    const colors=['#fff','#ff0','#0ff','#0f0','#f0f','#f00','#00f','#000'];
+    colors.forEach((clr,i)=>{ctx.fillStyle=clr;ctx.fillRect(i*(1920/8),1060,1920/8,20)});
   }
   draw();setInterval(draw,1000);return c.captureStream(30);
 }
 
-// ══════════════════════════════════════════════════
-// SWITCHING
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// SWITCHING + OBS SYNC
+// ══════════════════════════════════════════════════════
 function doCut(){
-  const tmp=S.pgm;S.pgm=S.prv;S.prv=tmp;
-  updMonitors();updTallies();updSrcList();
-  syncOBSFromPgm();syncOBSFromPrv();
-  const btn=document.getElementById('btn-cut');
-  btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),150);
+  const tmp=S.pgm;S.pgm=S.prv;S.prv=tmp;updMonitors();updTallies();updSrcList();syncOBSFromPgm();syncOBSFromPrv();
+  const btn=document.getElementById('btn-cut');btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),150);
 }
-
-// ── OBS ↔ StreamManager bidirectional sync ──
-function syncOBSFromPgm(){
-  if(!obs.ok||!S.pgm)return;
-  // Check if source has a linked OBS scene
-  const linked=S.sceneLinks[S.pgm];
-  if(linked){obs.req('SetCurrentProgramScene',{sceneName:linked}).catch(()=>{});return}
-  // Fallback: match by name
-  const s=S.sources.find(x=>x.id===S.pgm);
-  if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentProgramScene',{sceneName:sc}).catch(()=>{})}
-}
-function syncOBSFromPrv(){
-  if(!obs.ok||!S.prv||!S.obsStudioMode)return;
-  const linked=S.sceneLinks[S.prv];
-  if(linked){obs.req('SetCurrentPreviewScene',{sceneName:linked}).catch(()=>{});return}
-  const s=S.sources.find(x=>x.id===S.prv);
-  if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentPreviewScene',{sceneName:sc}).catch(()=>{})}
-}
-
 function doAuto(){
   const dur=S.tdur;
-  // Trigger OBS transition if in studio mode
-  if(obs.ok&&S.obsStudioMode){obs.req('TriggerStudioModeTransition').catch(()=>{})}
-  const pgmVid=document.getElementById('pgm-vid');
-  pgmVid.style.transition=`opacity ${dur/2}ms ease`;pgmVid.style.opacity='0';
+  if(obs.ok&&S.obsStudioMode)obs.req('TriggerStudioModeTransition').catch(()=>{});
+  const pgmVid=document.getElementById('pgm-vid');pgmVid.style.transition=`opacity ${dur/2}ms`;pgmVid.style.opacity='0';
   setTimeout(()=>{doCut();setTimeout(()=>{pgmVid.style.opacity='1';setTimeout(()=>pgmVid.style.transition='',dur/2+100)},50)},dur/2);
 }
+function doFTB(){
+  S.ftb=!S.ftb;document.getElementById('ftb-btn').classList.toggle('active',S.ftb);
+  const mon=document.getElementById('pgm-mon');mon.style.transition='opacity 500ms';mon.style.opacity=S.ftb?'0':'1';
+  if(obs.ok){obs.req(S.ftb?'SetStudioModeEnabled':S.ftb,{}).catch(()=>{});}// visual only
+  toast(S.ftb?'FADE TO BLACK':'FTB uit');
+}
+function syncOBSFromPgm(){
+  if(!obs.ok||!S.pgm)return;const linked=S.sceneLinks[S.pgm];
+  if(linked){obs.req('SetCurrentProgramScene',{sceneName:linked}).catch(()=>{});return}
+  const s=S.sources.find(x=>x.id===S.pgm);if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentProgramScene',{sceneName:sc}).catch(()=>{})}
+}
+function syncOBSFromPrv(){
+  if(!obs.ok||!S.prv||!S.obsStudioMode)return;const linked=S.sceneLinks[S.prv];
+  if(linked){obs.req('SetCurrentPreviewScene',{sceneName:linked}).catch(()=>{});return}
+  const s=S.sources.find(x=>x.id===S.prv);if(s){const sc=S.obsScenes.find(n=>n.toLowerCase().includes(s.name.toLowerCase()));if(sc)obs.req('SetCurrentPreviewScene',{sceneName:sc}).catch(()=>{})}
+}
+function toggleDSK(){
+  // Toggle first source overlay (simple DSK)
+  const btn=document.getElementById('dsk-btn');btn.classList.toggle('dsk-on');
+  toast(btn.classList.contains('dsk-on')?'DSK AAN':'DSK UIT');
+}
 
-// ══════════════════════════════════════════════════
-// OBS
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// OBS CONNECTION
+// ══════════════════════════════════════════════════════
 let obsConnecting=false,statsInterval=null;
-
 async function obsToggle(){
-  if(obs.ok){obs.disconnect();return}
-  if(obsConnecting)return;obsConnecting=true;
-  const host=document.getElementById('obs-host').value||'localhost';
-  const port=document.getElementById('obs-port').value||'4455';
-  const pw=document.getElementById('obs-pw').value;
-  const btn=document.getElementById('obs-btn');
-  btn.textContent='Verbinden...';btn.disabled=true;setCst('','Verbinden...');
-
+  if(obs.ok){obs.disconnect();return}if(obsConnecting)return;obsConnecting=true;
+  const host=document.getElementById('obs-host').value||'localhost',port=document.getElementById('obs-port').value||'4455',pw=document.getElementById('obs-pw').value;
+  const btn=document.getElementById('obs-btn');btn.textContent='VERBINDEN...';btn.disabled=true;setCst('','Verbinden...');
   obs.onUp=async()=>{
-    obsConnecting=false;btn.textContent='OBS loskoppelen';btn.disabled=false;
-    setCst('on','Verbonden ✓');setPill('pill-obs',true);toast('Verbonden met OBS! 🎬');
-    document.getElementById('stats-sec').style.display='block';
-    document.getElementById('scene-link-sec').style.display='block';
-    try{
-      // Enable Studio Mode for PRV/PGM sync
-      try{await obs.req('SetStudioModeEnabled',{studioModeEnabled:true});S.obsStudioMode=true;toast('OBS Studio Mode ingeschakeld 🎬')}catch(e){S.obsStudioMode=false}
-      const{scenes,currentProgramSceneName}=await obs.req('GetSceneList');
-      S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();
-      const{transitions,currentSceneTransitionName}=await obs.req('GetSceneTransitionList');
-      S.obsTrans=transitions.map(t=>t.transitionName);S.obsTransCur=currentSceneTransitionName;renderOBSTrans();
+    obsConnecting=false;btn.textContent='LOSKOPPELEN';btn.disabled=false;setCst('on','Verbonden ✓');
+    document.getElementById('pill-obs').classList.add('obs-on');toast('OBS verbonden');
+    document.getElementById('stats-sec').style.display='block';document.getElementById('scene-link-sec').style.display='block';
+    try{try{await obs.req('SetStudioModeEnabled',{studioModeEnabled:true});S.obsStudioMode=true}catch(e){S.obsStudioMode=false}
+      const{scenes,currentProgramSceneName}=await obs.req('GetSceneList');S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();
+      const{transitions,currentSceneTransitionName}=await obs.req('GetSceneTransitionList');S.obsTrans=transitions.map(t=>t.transitionName);S.obsTransCur=currentSceneTransitionName;
       const r=await obs.req('GetRecordStatus');S.rec=r.outputActive;if(S.rec)S.recT=Date.now();updRecUI();
       const r2=await obs.req('GetStreamStatus');S.str=r2.outputActive;updStrUI();
-      // Auto-link OBS scenes to sources with matching names
       autoLinkScenes();
     }catch(e){}
-    await loadOBSSources();
-    statsInterval=setInterval(fetchOBSStats,3000);
+    await loadOBSSources();statsInterval=setInterval(fetchOBSStats,3000);
   };
   obs.onDown=()=>{
-    obsConnecting=false;btn.textContent='Verbinden met OBS';btn.disabled=false;
-    setCst('','Niet verbonden');setPill('pill-obs',false);
-    document.getElementById('sclist').innerHTML='<div style="color:var(--dim2);font-size:11px">Verbind met OBS</div>';
-    document.getElementById('obs-trans-sec').style.display='none';
-    document.getElementById('stats-sec').style.display='none';
-    document.getElementById('scene-link-sec').style.display='none';
-    S.obsStudioMode=false;
-    S.rec=false;S.str=false;updRecUI();updStrUI();
-    if(statsInterval){clearInterval(statsInterval);statsInterval=null}
-    if(obsThumbLoop){clearInterval(obsThumbLoop);obsThumbLoop=null}
-    document.getElementById('obs-src-grid').innerHTML='<div class="obs-empty" style="grid-column:1/-1">Verbind met OBS om bronnen te laden</div>';
-    document.getElementById('vu-list').innerHTML='<div style="color:var(--dim2);font-size:10px">Verbind met OBS voor audio meters</div>';
+    obsConnecting=false;btn.textContent='VERBINDEN';btn.disabled=false;setCst('','Niet verbonden');
+    document.getElementById('pill-obs').classList.remove('obs-on');document.getElementById('stats-sec').style.display='none';document.getElementById('scene-link-sec').style.display='none';
+    document.getElementById('sclist').innerHTML='<div style="color:var(--dim2);font-size:10px">Verbind OBS</div>';
+    S.rec=false;S.str=false;S.obsStudioMode=false;updRecUI();updStrUI();
+    if(statsInterval){clearInterval(statsInterval);statsInterval=null}if(obsThumbLoop){clearInterval(obsThumbLoop);obsThumbLoop=null}
+    document.getElementById('obs-src-grid').innerHTML='<div style="grid-column:1/-1;color:var(--dim2);font-size:10px;text-align:center;padding:12px">Verbind met OBS</div>';
+    document.getElementById('vu-list').innerHTML='<div style="color:var(--dim2);font-size:9px">Verbind OBS voor meters</div>';
   };
   obs.onEvt=obsEvent;
-  try{await obs.connect(host,port,pw)}catch(e){
-    obsConnecting=false;btn.textContent='Verbinden met OBS';btn.disabled=false;
-    setCst('err',`Fout: ${e.message}`);toast(`OBS fout: ${e.message}`,'err');
-  }
+  try{await obs.connect(host,port,pw)}catch(e){obsConnecting=false;btn.textContent='VERBINDEN';btn.disabled=false;setCst('err',`Fout: ${e.message}`);toast(`OBS: ${e.message}`,'err')}
 }
 
 async function fetchOBSStats(){
   if(!obs.ok)return;
-  try{
-    const s=await obs.req('GetStats');
-    document.getElementById('stat-fps').textContent=(s.activeFps||0).toFixed(1);
-    document.getElementById('stat-cpu').textContent=(s.cpuUsage||0).toFixed(1)+'%';
-    document.getElementById('stat-drop').textContent=s.renderSkippedFrames||0;
-    document.getElementById('stat-mem').textContent=Math.round((s.memoryUsage||0));
-    document.getElementById('fps-val').textContent=(s.activeFps||0).toFixed(0);
-    document.getElementById('cpu-val').textContent=(s.cpuUsage||0).toFixed(0)+'%';
+  try{const s=await obs.req('GetStats');
+    document.getElementById('stat-fps').textContent=(s.activeFps||0).toFixed(1);document.getElementById('stat-cpu').textContent=(s.cpuUsage||0).toFixed(1)+'%';
+    document.getElementById('stat-drop').textContent=s.renderSkippedFrames||0;document.getElementById('stat-mem').textContent=Math.round(s.memoryUsage||0);
+    document.getElementById('fps-val').textContent=(s.activeFps||0).toFixed(0);document.getElementById('cpu-val').textContent=(s.cpuUsage||0).toFixed(0)+'%';
   }catch(e){}
 }
 
 // VU Meters
 const vuData={};
 function handleVUMeters(data){
-  if(!data.inputs)return;
-  const el=document.getElementById('vu-list');
+  if(!data.inputs)return;const el=document.getElementById('vu-list');
   data.inputs.forEach(inp=>{
     if(!inp.inputLevelsMul||!inp.inputLevelsMul.length)return;
-    const peak=Math.max(...inp.inputLevelsMul.map(ch=>ch[1]||0));
-    const mag=Math.max(...inp.inputLevelsMul.map(ch=>ch[0]||0));
+    const peak=Math.max(...inp.inputLevelsMul.map(ch=>ch[1]||0));const mag=Math.max(...inp.inputLevelsMul.map(ch=>ch[0]||0));
     vuData[inp.inputName]={mag,peak};
     let wrap=el.querySelector(`[data-vu="${CSS.escape(inp.inputName)}"]`);
-    if(!wrap){
-      wrap=document.createElement('div');wrap.className='vu-wrap';wrap.dataset.vu=inp.inputName;
-      wrap.innerHTML=`<div class="vu-name">${inp.inputName}</div><div class="vu-track"><div class="vu-bar"></div><div class="vu-peak"></div></div>`;
-      el.innerHTML='';el.appendChild(wrap); // replace placeholder
-    }
-    const pct=Math.min(Math.sqrt(mag)*100,100);
-    const pkpct=Math.min(Math.sqrt(peak)*100,100);
-    const bar=wrap.querySelector('.vu-bar');const pk=wrap.querySelector('.vu-peak');
-    if(bar)bar.style.width=pct+'%';
-    if(pk)pk.style.left=Math.min(pkpct,99)+'%';
+    if(!wrap){wrap=document.createElement('div');wrap.className='vu-wrap';wrap.dataset.vu=inp.inputName;wrap.innerHTML=`<div class="vu-name">${inp.inputName}</div><div class="vu-track"><div class="vu-bar"></div><div class="vu-peak"></div></div>`;if(el.firstChild&&el.firstChild.tagName!=='DIV')el.innerHTML='';el.appendChild(wrap)}
+    const pct=Math.min(Math.sqrt(mag)*100,100),pkpct=Math.min(Math.sqrt(peak)*100,100);
+    const bar=wrap.querySelector('.vu-bar'),pk=wrap.querySelector('.vu-peak');
+    if(bar)bar.style.width=pct+'%';if(pk)pk.style.left=Math.min(pkpct,99)+'%';
+  });
+  // Update per-cell VU bars
+  S.cells.forEach(cell=>{
+    if(!cell.srcId||!cell.vuBar)return;const src=S.sources.find(s=>s.id===cell.srcId);
+    if(src&&src.obsName&&vuData[src.obsName]){cell.vuBar.style.height=Math.min(Math.sqrt(vuData[src.obsName].mag)*100,100)+'%'}
+    else if(src&&vuData[src.name]){cell.vuBar.style.height=Math.min(Math.sqrt(vuData[src.name].mag)*100,100)+'%'}
   });
 }
 
 function obsEvent(type,data){
-  if(type==='CurrentProgramSceneChanged'){
-    S.obsScene=data.sceneName;renderScenes();
-    // Reverse sync: OBS → StreamManager PGM
-    const linked=Object.entries(S.sceneLinks).find(([sid,sc])=>sc===data.sceneName);
-    if(linked){const srcId=linked[0];if(srcId!==S.pgm){S.pgm=srcId;updMonitors();updTallies();updSrcList()}}
-  }
-  else if(type==='CurrentPreviewSceneChanged'){
-    S.obsPreviewScene=data.sceneName;
-    // Reverse sync: OBS → StreamManager PRV
-    const linked=Object.entries(S.sceneLinks).find(([sid,sc])=>sc===data.sceneName);
-    if(linked){const srcId=linked[0];if(srcId!==S.prv){S.prv=srcId;updMonitors();updTallies();updSrcList()}}
-  }
+  if(type==='CurrentProgramSceneChanged'){S.obsScene=data.sceneName;renderScenes();const linked=Object.entries(S.sceneLinks).find(([,sc])=>sc===data.sceneName);if(linked&&linked[0]!==S.pgm){S.pgm=linked[0];updMonitors();updTallies();updSrcList()}}
+  else if(type==='CurrentPreviewSceneChanged'){S.obsPreviewScene=data.sceneName;const linked=Object.entries(S.sceneLinks).find(([,sc])=>sc===data.sceneName);if(linked&&linked[0]!==S.prv){S.prv=linked[0];updMonitors();updTallies();updSrcList()}}
   else if(type==='StudioModeStateChanged'){S.obsStudioMode=data.studioModeEnabled}
   else if(type==='RecordStateChanged'){S.rec=data.outputActive;if(S.rec)S.recT=Date.now();else S.recT=null;updRecUI()}
   else if(type==='StreamStateChanged'){S.str=data.outputActive;updStrUI()}
-  else if(type==='CurrentSceneTransitionChanged'){S.obsTransCur=data.transitionName;renderOBSTrans()}
+  else if(type==='CurrentSceneTransitionChanged'){S.obsTransCur=data.transitionName}
   else if(type==='InputVolumeMeters'){handleVUMeters(data)}
-  else if(['SceneListChanged','SceneCreated','SceneRemoved'].includes(type)){
-    obs.req('GetSceneList').then(({scenes,currentProgramSceneName})=>{
-      S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();renderSceneLinks();
-    }).catch(()=>{});
-  }
-  else if(type==='InputCreated'||type==='InputRemoved'){loadOBSSources().catch(()=>{})}
-  else if(type==='SceneItemCreated'||type==='SceneItemRemoved'){loadOBSSources().catch(()=>{})}
+  else if(['SceneListChanged','SceneCreated','SceneRemoved'].includes(type)){obs.req('GetSceneList').then(({scenes,currentProgramSceneName})=>{S.obsScenes=scenes.map(s=>s.sceneName).reverse();S.obsScene=currentProgramSceneName;renderScenes();renderSceneLinks()}).catch(()=>{})}
+  else if(type==='InputCreated'||type==='InputRemoved'||type==='SceneItemCreated'||type==='SceneItemRemoved'){loadOBSSources().catch(()=>{})}
 }
 
 function renderScenes(){
   const el=document.getElementById('sclist');el.innerHTML='';
-  // Quick-add all scenes button
-  if(S.obsScenes.length>0){
-    const addAll=document.createElement('div');
-    addAll.style.cssText='padding:5px 8px;margin-bottom:5px;cursor:pointer;border-radius:5px;font-size:10px;color:var(--blue);background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);text-align:center;font-weight:700;transition:all .2s';
-    addAll.textContent='⚡ Alle scènes als bronnen toevoegen';
-    addAll.onmouseenter=()=>addAll.style.background='rgba(79,142,247,.15)';
-    addAll.onmouseleave=()=>addAll.style.background='rgba(79,142,247,.08)';
-    addAll.onclick=()=>{
-      let added=0;
-      S.obsScenes.forEach(n=>{
-        if(S.sources.find(s=>s.type==='obssnap'&&s.obsName===n))return;
-        const id=String(S.nid++);S.volumes[id]=1;
-        S.sources.push({id,name:n,type:'obssnap',obsName:n,url:'',stream:null});
-        S.sceneLinks[id]=n; // auto-link
-        const ec=S.cells.find(c=>!c.srcId);if(ec)setCell(ec,id);
-        if(!S.pgm){S.pgm=id;updMonitors()}else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}
-        added++;
-      });
-      if(added){updSrcList();updTallies();updVolList();renderSceneLinks();toast(`${added} scènes toegevoegd & gekoppeld ⚡`)}
-      else toast('Alle scènes zijn al toegevoegd');
-    };
-    el.appendChild(addAll);
+  if(S.obsScenes.length){
+    const addAll=document.createElement('div');addAll.style.cssText='padding:4px 6px;margin-bottom:3px;cursor:pointer;border-radius:3px;font-size:9px;color:var(--blue);background:rgba(43,123,224,.06);border:1px solid rgba(43,123,224,.15);text-align:center;font-weight:700';
+    addAll.textContent='⚡ ALLE SCÈNES TOEVOEGEN';addAll.onclick=()=>{
+      let n=0;S.obsScenes.forEach(sc=>{if(S.sources.find(s=>s.type==='obssnap'&&s.obsName===sc))return;const id=String(S.nid++);S.volumes[id]=1;S.sources.push({id,name:sc,type:'obssnap',obsName:sc,url:'',stream:null});S.sceneLinks[id]=sc;const ec=S.cells.find(c=>!c.srcId);if(ec)setCell(ec,id);if(!S.pgm){S.pgm=id;updMonitors()}else if(!S.prv&&S.pgm!==id){S.prv=id;updMonitors()}n++});
+      if(n){updSrcList();updTallies();renderSceneLinks();toast(`${n} scènes toegevoegd`)}
+    };el.appendChild(addAll);
   }
   S.obsScenes.forEach(n=>{
-    const isPgm=n===S.obsScene;
-    const isPrv=n===S.obsPreviewScene;
-    const it=document.createElement('div');it.className='scitem'+(isPgm?' active':'')+(isPrv?' trans-active':'');
-    const statusBadge=isPgm?'<span style="font-size:8px;background:var(--pgm);color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px">PGM</span>':
-      isPrv?'<span style="font-size:8px;background:var(--prv);color:#000;padding:1px 5px;border-radius:3px;margin-left:4px">PRV</span>':'';
-    it.innerHTML=`<span style="flex:1">${n}${statusBadge}</span>`;
+    const isPgm=n===S.obsScene,isPrv=n===S.obsPreviewScene;
+    const it=document.createElement('div');it.className='scitem'+(isPgm?' active':'');
+    const badge=isPgm?'<span style="font-size:7px;background:var(--pgm);color:#fff;padding:1px 4px;border-radius:2px;margin-left:3px">PGM</span>':isPrv?'<span style="font-size:7px;background:var(--prv);color:#fff;padding:1px 4px;border-radius:2px;margin-left:3px">PRV</span>':'';
+    it.innerHTML=`<span style="flex:1">${n}${badge}</span>`;
     it.onclick=()=>obs.req('SetCurrentProgramScene',{sceneName:n}).catch(e=>toast(e.message,'err'));
-    // Right-click → set as preview
-    it.oncontextmenu=(e)=>{e.preventDefault();if(S.obsStudioMode)obs.req('SetCurrentPreviewScene',{sceneName:n}).catch(e2=>toast(e2.message,'err'))};
+    it.oncontextmenu=e=>{e.preventDefault();if(S.obsStudioMode)obs.req('SetCurrentPreviewScene',{sceneName:n}).catch(e2=>toast(e2.message,'err'))};
     el.appendChild(it);
-    if(obs.ok){
-      obs.req('GetSourceScreenshot',{sourceName:n,imageFormat:'jpeg',imageWidth:96,imageHeight:54,imageCompressionQuality:60}).then(r=>{
-        if(r.imageData){const img=document.createElement('img');img.className='scitem-thumb';img.src=r.imageData;it.insertBefore(img,it.firstChild)}
-      }).catch(()=>{});
-    }
+    if(obs.ok){obs.req('GetSourceScreenshot',{sourceName:n,imageFormat:'jpeg',imageWidth:84,imageHeight:48,imageCompressionQuality:50}).then(r=>{if(r.imageData){const img=document.createElement('img');img.className='scitem-thumb';img.src=r.imageData;it.insertBefore(img,it.firstChild)}}).catch(()=>{})}
   });
 }
 
-function renderOBSTrans(){
-  const sec=document.getElementById('obs-trans-sec');
-  if(!S.obsTrans.length){sec.style.display='none';return}
-  sec.style.display='block';
-  const el=document.getElementById('obs-trans-list');el.innerHTML='';
-  S.obsTrans.forEach(n=>{
-    const it=document.createElement('div');it.className='scitem'+(n===S.obsTransCur?' trans-active':'');
-    it.textContent=n;
-    it.onclick=()=>obs.req('SetCurrentSceneTransition',{transitionName:n}).then(()=>{S.obsTransCur=n;renderOBSTrans()}).catch(e=>toast(e.message,'err'));
-    el.appendChild(it);
-  });
-}
-
-// Auto-link scenes ↔ sources by matching names
 function autoLinkScenes(){
-  S.sources.forEach(src=>{
-    const match=S.obsScenes.find(sc=>sc.toLowerCase()===src.name.toLowerCase()
-      ||sc.toLowerCase().includes(src.name.toLowerCase())
-      ||src.name.toLowerCase().includes(sc.toLowerCase()));
-    if(match&&!S.sceneLinks[src.id])S.sceneLinks[src.id]=match;
-  });
+  S.sources.forEach(src=>{const match=S.obsScenes.find(sc=>sc.toLowerCase()===src.name.toLowerCase()||sc.toLowerCase().includes(src.name.toLowerCase()));if(match&&!S.sceneLinks[src.id])S.sceneLinks[src.id]=match});
   renderSceneLinks();
 }
-
 function renderSceneLinks(){
   const el=document.getElementById('scene-link-list');if(!el)return;el.innerHTML='';
-  if(!S.sources.length){el.innerHTML='<div style="color:var(--dim2);font-size:10px">Voeg bronnen toe</div>';return}
   S.sources.forEach(src=>{
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:5px;margin-bottom:5px';
-    const lbl=document.createElement('span');lbl.style.cssText='flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-    lbl.textContent=src.name;
-    const sel=document.createElement('select');sel.className='inp inp-sm';sel.style.cssText='flex:1;margin:0';
-    sel.innerHTML=`<option value="">-- geen --</option>`+S.obsScenes.map(sc=>`<option value="${sc}"${S.sceneLinks[src.id]===sc?' selected':''}>${sc}</option>`).join('');
-    sel.onchange=()=>{
-      if(sel.value)S.sceneLinks[src.id]=sel.value;else delete S.sceneLinks[src.id];
-      toast(`${src.name} → ${sel.value||'geen koppeling'}`);
-    };
-    const dot=document.createElement('div');
-    dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${S.sceneLinks[src.id]?'var(--prv)':'var(--dim2)'};flex-shrink:0`;
-    row.appendChild(dot);row.appendChild(lbl);row.appendChild(sel);el.appendChild(row);
+    const row=document.createElement('div');row.className='link-row';
+    const dot=document.createElement('div');dot.className='link-dot';dot.style.background=S.sceneLinks[src.id]?'var(--prv)':'var(--dim2)';
+    const name=document.createElement('span');name.className='link-name';name.textContent=src.name;
+    const sel=document.createElement('select');sel.innerHTML='<option value="">—</option>'+S.obsScenes.map(sc=>`<option value="${sc}"${S.sceneLinks[src.id]===sc?' selected':''}>${sc}</option>`).join('');
+    sel.onchange=()=>{if(sel.value)S.sceneLinks[src.id]=sel.value;else delete S.sceneLinks[src.id]};
+    row.appendChild(dot);row.appendChild(name);row.appendChild(sel);el.appendChild(row);
   });
 }
 
-async function toggleRec(){if(!obs.ok){toast('Verbind eerst met OBS','err');return}try{await obs.req(S.rec?'StopRecord':'StartRecord')}catch(e){toast(`Opname fout: ${e.message}`,'err')}}
-async function toggleStr(){if(!obs.ok){toast('Verbind eerst met OBS','err');return}try{await obs.req(S.str?'StopStream':'StartStream')}catch(e){toast(`Stream fout: ${e.message}`,'err')}}
+async function toggleRec(){if(!obs.ok){toast('Verbind OBS','err');return}try{await obs.req(S.rec?'StopRecord':'StartRecord')}catch(e){toast(e.message,'err')}}
+async function toggleStr(){if(!obs.ok){toast('Verbind OBS','err');return}try{await obs.req(S.str?'StopStream':'StartStream')}catch(e){toast(e.message,'err')}}
+function updRecUI(){const btn=document.getElementById('btn-rec'),pill=document.getElementById('pill-rec');if(S.rec){btn.textContent='⏹ STOP OPNAME';btn.classList.add('on');pill.classList.add('on')}else{btn.textContent='⏺ OPNAME';btn.classList.remove('on');pill.classList.remove('on')}}
+function updStrUI(){const btn=document.getElementById('btn-str'),pill=document.getElementById('pill-live');if(S.str){btn.textContent='⏹ STOP STREAM';btn.classList.add('on');pill.classList.add('live')}else{btn.textContent='📡 STREAM';btn.classList.remove('on');pill.classList.remove('live')}}
+function setCst(cls,txt){document.getElementById('cst-obs').className='cst'+(cls?' '+cls:'');document.getElementById('cst-txt').textContent=txt}
 
-function updRecUI(){
-  const btn=document.getElementById('btn-rec'),pill=document.getElementById('pill-rec');
-  if(S.rec){btn.textContent='⏹ OPNAME STOPPEN';btn.classList.add('on');pill.classList.add('rec-on')}
-  else{btn.textContent='⏺ OPNAME STARTEN';btn.classList.remove('on');pill.classList.remove('rec-on')}
-}
-function updStrUI(){
-  const btn=document.getElementById('btn-str'),pill=document.getElementById('pill-live');
-  if(S.str){btn.textContent='⏹ STREAM STOPPEN';btn.classList.add('on');pill.classList.add('live-on')}
-  else{btn.textContent='📡 STREAM STARTEN';btn.classList.remove('on');pill.classList.remove('live-on')}
-}
-function setCst(cls,txt){
-  document.getElementById('cst-obs').className='cst'+(cls?' '+cls:'');
-  document.getElementById('cst-txt').textContent=txt;
-}
-function setPill(id,on){
-  const p=document.getElementById(id);if(!p)return;
-  const map={obs:'obs-on',mix:'mix-on',rec:'rec-on',live:'live-on'};
-  const key=Object.keys(map).find(k=>id.includes(k));
-  if(key)p.classList.toggle(map[key],on);
-}
-
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // CONTEXT MENU
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function showCtx(cell,x,y){
   document.querySelectorAll('.ctxmenu').forEach(m=>m.remove());
   const m=document.createElement('div');m.className='ctxmenu';
-  const ti=document.createElement('div');ti.className='ctxtitle';ti.textContent=`Cel ${cell.el.querySelector('.idx-badge')?.textContent||''}`;m.appendChild(ti);
-  if(S.sources.length){
-    const icons={hls:'📡',url:'🎬',webcam:'📷',screen:'🖥',twitch:'🟣',youtube:'▶️',test:'🎨',obssnap:'🎬'};
-    S.sources.forEach(s=>{
-      const it=document.createElement('div');it.className='ctxitem';
-      it.innerHTML=`<div style="width:7px;height:7px;border-radius:50%;background:${cell.srcId===s.id?'var(--prv)':'var(--dim2)'}"></div>${icons[s.type]||'📺'} ${s.name}`;
-      it.onclick=()=>{setCell(cell,s.id);m.remove()};m.appendChild(it);
-    });
-  }else{
-    const ni=document.createElement('div');ni.className='ctxitem';ni.style.color='var(--dim)';ni.textContent='Geen bronnen';m.appendChild(ni);
-  }
-  if(cell.srcId){
-    const sep=document.createElement('div');sep.className='ctxsep';m.appendChild(sep);
-    const cl=document.createElement('div');cl.className='ctxitem danger';cl.innerHTML='✕ Leegmaken';
-    cl.onclick=()=>{setCell(cell,null);m.remove()};m.appendChild(cl);
-  }
+  const ti=document.createElement('div');ti.className='ctxtitle';ti.textContent=`INPUT ${cell.el.querySelector('.umd-idx')?.textContent||''}`;m.appendChild(ti);
+  if(S.sources.length){S.sources.forEach(s=>{
+    const it=document.createElement('div');it.className='ctxitem';
+    it.innerHTML=`<div style="width:5px;height:5px;border-radius:50%;background:${cell.srcId===s.id?'var(--prv)':'var(--dim2)'}"></div>${s.name}`;
+    it.onclick=()=>{setCell(cell,s.id);m.remove()};m.appendChild(it);
+  })}
+  if(cell.srcId){const sep=document.createElement('div');sep.className='ctxsep';m.appendChild(sep);
+    const cl=document.createElement('div');cl.className='ctxitem danger';cl.innerHTML='✕ Leegmaken';cl.onclick=()=>{setCell(cell,null);m.remove()};m.appendChild(cl)}
   const sep2=document.createElement('div');sep2.className='ctxsep';m.appendChild(sep2);
-  [{txt:'🔴 Naar PROGRAM',fn:()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPgm()}}},
-   {txt:'🟢 Naar PREVIEW',fn:()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}}]
-  .forEach(({txt,fn})=>{
-    const it=document.createElement('div');it.className='ctxitem';it.innerHTML=txt;
-    it.onclick=()=>{fn();m.remove()};m.appendChild(it);
-  });
-  m.style.left=Math.min(x,window.innerWidth-190)+'px';
-  m.style.top=Math.min(y,window.innerHeight-260)+'px';
-  document.body.appendChild(m);
-  setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),10);
+  [{t:'🔴 → PROGRAM',fn:()=>{if(cell.srcId){S.pgm=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPgm()}}},{t:'🟢 → PREVIEW',fn:()=>{if(cell.srcId){S.prv=cell.srcId;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}}]
+  .forEach(({t,fn})=>{const it=document.createElement('div');it.className='ctxitem';it.innerHTML=t;it.onclick=()=>{fn();m.remove()};m.appendChild(it)});
+  m.style.left=Math.min(x,window.innerWidth-180)+'px';m.style.top=Math.min(y,window.innerHeight-250)+'px';
+  document.body.appendChild(m);setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),10);
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // TRANSITIONS
-// ══════════════════════════════════════════════════
-function selTrans(btn){
-  document.querySelectorAll('.trb').forEach(b=>b.classList.toggle('active',b===btn));
-  if(obs.ok)obs.req('SetCurrentSceneTransition',{transitionName:btn.dataset.t}).catch(()=>{});
-}
-function tdurChange(v){
-  S.tdur=+v;document.getElementById('tdur-lbl').textContent=v+'ms';
-  if(obs.ok)obs.req('SetCurrentSceneTransitionDuration',{transitionDuration:+v}).catch(()=>{});
-}
+// ══════════════════════════════════════════════════════
+function selTrans(btn){document.querySelectorAll('.ttbtn[data-t]').forEach(b=>b.classList.toggle('active',b===btn));if(obs.ok)obs.req('SetCurrentSceneTransition',{transitionName:btn.dataset.t}).catch(()=>{})}
+function tdurChange(v){S.tdur=+v;document.getElementById('tdur-lbl').textContent=v+'ms';if(obs.ok)obs.req('SetCurrentSceneTransitionDuration',{transitionDuration:+v}).catch(()=>{})}
 
-// ══════════════════════════════════════════════════
+// T-bar
+(function(){
+  const track=document.getElementById('tbar-track'),thumb=document.getElementById('tbar-thumb');
+  let dragging=false;
+  thumb.addEventListener('mousedown',e=>{dragging=true;e.preventDefault()});
+  document.addEventListener('mousemove',e=>{if(!dragging)return;const rect=track.getBoundingClientRect();let pct=(e.clientY-rect.top)/rect.height;pct=Math.max(0,Math.min(1,pct));thumb.style.top=(pct*(rect.height-10))+'px'});
+  document.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;const rect=track.getBoundingClientRect();const top=parseFloat(thumb.style.top)||0;const pct=top/(rect.height-10);if(pct>0.8){doCut();thumb.style.top='0px'}else{thumb.style.top='0px'}});
+})();
+
+// ══════════════════════════════════════════════════════
 // ADD SOURCE MODAL
-// ══════════════════════════════════════════════════
-function openAddSrc(){
-  document.getElementById('src-name').value=`Camera ${S.sources.length+1}`;
-  document.getElementById('src-url').value='';
-  pickTypeByVal('url');openModal('add-modal');
-  navigator.mediaDevices?.enumerateDevices().then(devs=>{
-    const cams=devs.filter(d=>d.kind==='videoinput');
-    const sel=document.getElementById('cam-sel');
-    sel.innerHTML=cams.length?cams.map((d,i)=>`<option value="${d.deviceId}">${d.label||`Camera ${i+1}`}</option>`).join(''):'<option>Geen camera</option>';
-  }).catch(()=>{});
-}
-
+// ══════════════════════════════════════════════════════
+function openAddSrc(){document.getElementById('src-name').value=`CAM ${S.sources.length+1}`;document.getElementById('src-url').value='';pickTypeByVal('url');openModal('add-modal');navigator.mediaDevices?.enumerateDevices().then(devs=>{const cams=devs.filter(d=>d.kind==='videoinput');document.getElementById('cam-sel').innerHTML=cams.length?cams.map((d,i)=>`<option value="${d.deviceId}">${d.label||`Camera ${i+1}`}</option>`).join(''):'<option>Geen</option>'}).catch(()=>{})}
 function pickType(btn){pickTypeByVal(btn.dataset.st)}
-function pickTypeByVal(type){
-  S.selType=type;
-  document.querySelectorAll('.typebtn').forEach(b=>b.classList.toggle('active',b.dataset.st===type));
-  document.getElementById('url-row').style.display=(type==='url'||type==='hls')?'block':'none';
-  document.getElementById('twitch-row').style.display=type==='twitch'?'block':'none';
-  document.getElementById('yt-row').style.display=type==='youtube'?'block':'none';
-  document.getElementById('cam-row').style.display=type==='webcam'?'block':'none';
-  const hints={url:'Directe video URL: MP4, WebM, MKV',hls:'HLS stream URL (.m3u8) — IPTV, relay server, CDN'};
-  document.getElementById('url-hint').textContent=hints[type]||'';
-  document.getElementById('url-lbl').textContent=type==='hls'?'HLS URL (.m3u8)':'Video URL';
-}
-
-function extractYtId(u){
-  u=u.trim();
-  let m=u.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];
-  m=u.match(/[?&]v=([a-zA-Z0-9_-]{11})/);if(m)return m[1];
-  m=u.match(/embed\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];
-  if(/^[a-zA-Z0-9_-]{11}$/.test(u))return u;
-  return null;
-}
-
+function pickTypeByVal(type){S.selType=type;document.querySelectorAll('.typebtn').forEach(b=>b.classList.toggle('active',b.dataset.st===type));document.getElementById('url-row').style.display=(type==='url'||type==='hls')?'block':'none';document.getElementById('twitch-row').style.display=type==='twitch'?'block':'none';document.getElementById('yt-row').style.display=type==='youtube'?'block':'none';document.getElementById('cam-row').style.display=type==='webcam'?'block':'none';document.getElementById('url-hint').textContent=type==='hls'?'HLS .m3u8 stream URL':'Directe video URL (MP4, WebM)';document.getElementById('url-lbl').textContent=type==='hls'?'HLS URL':'Video URL'}
+function extractYtId(u){u=u.trim();let m=u.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];m=u.match(/[?&]v=([a-zA-Z0-9_-]{11})/);if(m)return m[1];m=u.match(/embed\/([a-zA-Z0-9_-]{11})/);if(m)return m[1];if(/^[a-zA-Z0-9_-]{11}$/.test(u))return u;return null}
 async function confirmAdd(){
-  const name=document.getElementById('src-name').value.trim()||'Bron';
-  const type=S.selType;closeModal('add-modal');
-  if(type==='twitch'){
-    const raw=document.getElementById('twitch-ch').value.trim();
-    const ch=raw.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)?.[1]||raw;
-    if(!ch){toast('Voer een kanaalnaam in','err');return}
-    addSrc(name,'twitch',{channel:ch});
-  }else if(type==='youtube'){
-    const ytId=extractYtId(document.getElementById('yt-url').value);
-    if(!ytId){toast('Geen YouTube video ID gevonden','err');return}
-    addSrc(name,'youtube',{ytId});
-  }else if(type==='webcam'){
-    const devId=document.getElementById('cam-sel').value;
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:devId?{deviceId:{exact:devId}}:true,audio:true});
-      addSrc(name,'webcam',{stream});
-    }catch(e){toast('Webcam toegang geweigerd','err')}
-  }else if(type==='screen'){
-    try{
-      const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
-      addSrc(name,'screen',{stream});
-    }catch(e){toast('Scherm delen geannuleerd','err')}
-  }else{
-    const url=document.getElementById('src-url').value.trim();
-    if(!url){toast('Voer een URL in','err');return}
-    addSrc(name,type,{url});
-  }
+  const name=document.getElementById('src-name').value.trim()||'Bron',type=S.selType;closeModal('add-modal');
+  if(type==='twitch'){const raw=document.getElementById('twitch-ch').value.trim();const ch=raw.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)?.[1]||raw;if(!ch){toast('Geen kanaal','err');return}addSrc(name,'twitch',{channel:ch})}
+  else if(type==='youtube'){const ytId=extractYtId(document.getElementById('yt-url').value);if(!ytId){toast('Geen YouTube ID','err');return}addSrc(name,'youtube',{ytId})}
+  else if(type==='webcam'){try{const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:document.getElementById('cam-sel').value}},audio:true});addSrc(name,'webcam',{stream})}catch(e){toast('Camera geweigerd','err')}}
+  else if(type==='screen'){try{const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});addSrc(name,'screen',{stream})}catch(e){toast('Geannuleerd','err')}}
+  else{const url=document.getElementById('src-url').value.trim();if(!url){toast('Geen URL','err');return}addSrc(name,type,{url})}
 }
 
 function openModal(id){document.getElementById(id).classList.remove('hidden')}
 function closeModal(id){document.getElementById(id).classList.add('hidden')}
 function toggleFS(){!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen()}
-
-// ══════════════════════════════════════════════════
-// MIXER
-// ══════════════════════════════════════════════════
 function toggleMixer(on){document.getElementById('mix-body').style.display=on?'block':'none';on?mixer.start():mixer.stop()}
-function setMixMode(btn){mixer.mode=btn.dataset.m;document.querySelectorAll('.mmbtn').forEach(b=>b.classList.toggle('active',b===btn))}
-function setMixQ(btn){mixer.setQuality(+btn.dataset.q);document.querySelectorAll('.mqbtn').forEach(b=>b.classList.toggle('active',b===btn));toast(`Kwaliteit: ${btn.dataset.q}p`)}
-function toggleMixRec(){if(!mixer.running){toast('Schakel de mixer eerst in','err');return}mixer.recActive?mixer.stopRec():mixer.startRec()}
+function setMixMode(btn){mixer.mode=btn.dataset.m;document.querySelectorAll('.ttbtn[data-m]').forEach(b=>b.classList.toggle('active',b===btn))}
+function toggleMixRec(){if(!mixer.running){toast('Mixer uit','err');return}mixer.recActive?mixer.stopRec():mixer.startRec()}
+function switchTab(t){document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['local','obs'][i]===t));document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('active',['local','obs'][i]===t));if(t==='obs'&&obs.ok)startObsThumbLoop()}
 
-// ══════════════════════════════════════════════════
-// TABS
-// ══════════════════════════════════════════════════
-function switchTab(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['local','obs'][i]===t));
-  document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('active',['local','obs'][i]===t));
-  if(t==='obs'&&obs.ok&&S.obsInputs.length)startObsThumbLoop();
-}
-
-// ══════════════════════════════════════════════════
-// COUNTDOWN TIMER
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════
 const tmr={val:0,running:false,mode:'stopwatch',interval:null};
-function timerStartStop(){
-  if(tmr.running){
-    clearInterval(tmr.interval);tmr.running=false;
-    document.getElementById('timer-startstop').textContent='▶ Start';
-  }else{
-    tmr.running=true;document.getElementById('timer-startstop').textContent='⏸ Stop';
-    tmr.interval=setInterval(()=>{
-      if(tmr.mode==='stopwatch'){tmr.val++}
-      else{tmr.val=Math.max(0,tmr.val-1);if(tmr.val===0){clearInterval(tmr.interval);tmr.running=false;document.getElementById('timer-startstop').textContent='▶ Start';toast('⏰ Timer klaar!')}}
-      updTimerDisplay();
-    },1000);
-  }
-}
-function timerReset(){clearInterval(tmr.interval);tmr.running=false;tmr.val=0;document.getElementById('timer-startstop').textContent='▶ Start';updTimerDisplay()}
-function timerMode(){
-  tmr.mode=tmr.mode==='stopwatch'?'countdown':'stopwatch';
-  document.getElementById('timer-mode-btn').textContent=tmr.mode==='stopwatch'?'Stopwatch':'Countdown';
-  document.getElementById('timer-presets').style.display=tmr.mode==='countdown'?'flex':'none';
-}
+function timerStartStop(){if(tmr.running){clearInterval(tmr.interval);tmr.running=false;document.getElementById('timer-startstop').textContent='▶'}else{tmr.running=true;document.getElementById('timer-startstop').textContent='⏸';tmr.interval=setInterval(()=>{if(tmr.mode==='stopwatch')tmr.val++;else{tmr.val=Math.max(0,tmr.val-1);if(tmr.val===0){clearInterval(tmr.interval);tmr.running=false;document.getElementById('timer-startstop').textContent='▶';toast('⏰ Timer!')}}updTimerDisplay()},1000)}}
+function timerReset(){clearInterval(tmr.interval);tmr.running=false;tmr.val=0;document.getElementById('timer-startstop').textContent='▶';updTimerDisplay()}
+function timerMode(){tmr.mode=tmr.mode==='stopwatch'?'countdown':'stopwatch';document.getElementById('timer-mode-btn').textContent=tmr.mode==='stopwatch'?'⏱':'⏳'}
 function timerSet(s){tmr.val=s;updTimerDisplay()}
-function updTimerDisplay(){
-  const h=Math.floor(tmr.val/3600),m=Math.floor((tmr.val%3600)/60),s=tmr.val%60;
-  const p=n=>String(n).padStart(2,'0');
-  document.getElementById('cdown-val').textContent=h>0?`${p(h)}:${p(m)}:${p(s)}`:`${p(m)}:${p(s)}`;
-}
+function updTimerDisplay(){const h=Math.floor(tmr.val/3600),m=Math.floor((tmr.val%3600)/60),s=tmr.val%60;const p=n=>String(n).padStart(2,'0');document.getElementById('cdown-val').textContent=h>0?`${p(h)}:${p(m)}:${p(s)}`:`${p(m)}:${p(s)}`}
 
-// ══════════════════════════════════════════════════
-// CLOCK & TIMERS
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════
 function tick(){
   const now=new Date(),p=n=>String(n).padStart(2,'0');
   document.getElementById('clock').textContent=`${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
-  if(S.rec&&S.recT){
-    const e=Math.floor((Date.now()-S.recT)/1000),h=Math.floor(e/3600),m=Math.floor((e%3600)/60),s=e%60;
-    const ts=`${p(h)}:${p(m)}:${p(s)}`;
-    document.getElementById('rec-timer').textContent=ts;
-    document.getElementById('hdr-rec-t').textContent=ts;
-  }else if(!S.rec){document.getElementById('hdr-rec-t').textContent=''}
+  if(S.rec&&S.recT){const e=Math.floor((Date.now()-S.recT)/1000),h=Math.floor(e/3600),m=Math.floor((e%3600)/60),s=e%60;const ts=`${p(h)}:${p(m)}:${p(s)}`;document.getElementById('rec-timer').textContent=ts;document.getElementById('rec-timer').classList.add('on');document.getElementById('hdr-rec-t').textContent=ts;document.getElementById('pgm-clock').textContent=`PGM ${ts}`}
+  else{document.getElementById('rec-timer').classList.remove('on');document.getElementById('hdr-rec-t').textContent='';document.getElementById('pgm-clock').textContent=`PGM ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`}
 }
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // TOAST
-// ══════════════════════════════════════════════════
-function toast(msg,type='ok'){
-  const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';
-  el.style.borderLeftColor=type==='err'?'var(--pgm)':'var(--prv)';
-  clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3500);
-}
+// ══════════════════════════════════════════════════════
+function toast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';el.style.borderLeftColor=type==='err'?'var(--pgm)':'var(--prv)';clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3000)}
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // KEYBOARD
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
   switch(e.key){
@@ -1900,19 +1166,15 @@ document.addEventListener('keydown',e=>{
     case 's':case 'S':toggleStr();break;
     case 'm':case 'M':toggleMixRec();break;
     case 't':case 'T':timerStartStop();break;
-    default:
-      const n=parseInt(e.key);
-      if(n>=1&&n<=9){const src=S.sources[n-1];if(src){S.prv=src.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}
+    case 'b':case 'B':doFTB();break;
+    default:const n=parseInt(e.key);if(n>=1&&n<=9){const src=S.sources[n-1];if(src){S.prv=src.id;updMonitors();updTallies();updSrcList();syncOBSFromPrv()}}
   }
 });
 
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════════
-mixer.init();
-setLayout(4);
-setInterval(tick,1000);tick();
-updSrcList();updRecUI();updStrUI();
+// ══════════════════════════════════════════════════════
+mixer.init();setLayout(4);setInterval(tick,1000);tick();updSrcList();updRecUI();updStrUI();
 </script>
 </body>
 </html>
